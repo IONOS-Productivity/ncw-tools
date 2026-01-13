@@ -9,18 +9,9 @@
 	<licence>AGPL-3.0-or-later</licence>
 	<author mail="example@example.com" homepage="https://example.com">Example</author>
 	<namespace>NcwTools</namespace>
-	<category>customization</category>
+	<category>tools</category>
 	<bugs>https://example.com/bugs</bugs>
 	<dependencies>
 		<nextcloud min-version="31" max-version="32"/>
 	</dependencies>
-	<navigations>
-		<navigation>
-			<id>ncw_tools</id>
-			<name>App Template</name>
-			<route>ncw_tools.page.index</route>
-			<icon>app.svg</icon>
-			<type>link</type>
-		</navigation>
-	</navigations>
 </info>
