@@ -8,7 +8,7 @@
 	<version>1.0.0</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author mail="example@example.com" homepage="https://example.com">Example</author>
-	<namespace>AppTemplate</namespace>
+	<namespace>NcwTools</namespace>
 	<category>customization</category>
 	<bugs>https://example.com/bugs</bugs>
 	<dependencies>
