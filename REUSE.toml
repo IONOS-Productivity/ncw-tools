@@ -25,6 +25,10 @@ path = [
     ".php-cs-fixer.dist.php",
     ".gitignore",
     "lib/**/*.php",
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "templates/**/*.php",
+    "tests/**/*.php",
     ".github/dependabot.yml",
     ".github/git-commit-instructions.md"
 ]
