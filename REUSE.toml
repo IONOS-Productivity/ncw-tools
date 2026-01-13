@@ -1,0 +1,112 @@
+version = 1
+SPDX-PackageName = "ncw_apps_menu"
+SPDX-PackageSupplier = "STRATO GmbH"
+SPDX-PackageDownloadLocation = "NOASSERTION"
+
+# Configuration files without license headers - STRATO GmbH
+[[annotations]]
+path = [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vite.config.js",
+    "webpack.js",
+    "stylelint.config.cjs",
+    ".eslintrc.cjs",
+    "psalm.xml",
+    "rector.php",
+    "composer.json",
+    "composer.lock",
+    "custom.d.ts",
+    "appinfo/info.xml",
+    "openapi.json",
+    "tests/phpunit.xml",
+    ".nvmrc",
+    ".php-cs-fixer.dist.php",
+    ".gitignore",
+    "lib/**/*.php",
+    ".github/dependabot.yml",
+    ".github/git-commit-instructions.md"
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Documentation files
+[[annotations]]
+path = [
+    "README.md",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md"
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Generated CSS files
+[[annotations]]
+path = "css/*.css"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Generated JS files
+[[annotations]]
+path = [
+    "js/*.mjs",
+    "js/*.mjs.map"
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# SVG assets
+[[annotations]]
+path = "img/*.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Vendor composer files in vendor-bin directories
+[[annotations]]
+path = [
+    "vendor-bin/*/composer.json",
+    "vendor-bin/*/composer.lock"
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Cache and test files
+[[annotations]]
+path = [
+    ".php-cs-fixer.cache",
+    "tests/.phpunit.result.cache"
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# PHP test and template files
+[[annotations]]
+path = [
+    "tests/**/*.php",
+    "templates/**/*.php"
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# License files themselves
+[[annotations]]
+path = "LICENSE"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2007 Free Software Foundation, Inc. <https://fsf.org/>"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+# REUSE configuration file
+[[annotations]]
+path = "REUSE.toml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-License-Identifier = "CC0-1.0"
