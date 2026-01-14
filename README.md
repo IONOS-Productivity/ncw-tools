@@ -1,25 +1,62 @@
-# App Template
+# NCW Tools
 
-A template to get started with Nextcloud app development.
+Utility app providing event listeners and extensible tools for system administration and maintenance tasks.
 
-## Usage
+## Description
 
-- To get started easily use the [Appstore App generator](https://apps.nextcloud.com/developer/apps/generate) to
-  dynamically generate an App based on this repository with all the constants prefilled.
-- Alternatively you can use the "Use this template" button on the top of this page to create a new repository based on
-  this repository. Afterwards adjust all the necessary constants like App ID, namespace, descriptions etc.
+NCW Tools enhances Nextcloud with advanced system utilities including event listeners for monitoring system events, and extensible tools designed to streamline system administration and maintenance workflows.
 
-Once your app is ready follow the [instructions](https://nextcloudappstore.readthedocs.io/en/latest/developer.html) to
-upload it to the Appstore.
+## Installation
 
-## Resources
+### From Source
 
-### Documentation for developers:
+1. Clone this repository into your Nextcloud apps directory:
+   ```bash
+   cd nextcloud/apps
+   git clone <repository-url> ncw_tools
+   ```
 
-- General documentation and tutorials: https://nextcloud.com/developer
-- Technical documentation: https://docs.nextcloud.com/server/latest/developer_manual
+2. Install dependencies:
+   ```bash
+   cd ncw_tools
+   composer install
+   ```
 
-### Help for developers:
+3. Enable the app in your Nextcloud admin panel or via command line:
+   ```bash
+   php occ app:enable ncw_tools
+   ```
 
-- Official community chat: https://cloud.nextcloud.com/call/xs25tz5y
-- Official community forum: https://help.nextcloud.com/c/dev/11
+## Development
+
+### Prerequisites
+
+- PHP 8.1+
+- Composer
+
+### Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   composer install
+   ```
+
+### Available Scripts
+
+- `composer lint` - Lint PHP files
+- `composer cs:check` - Check coding style
+- `composer cs:fix` - Fix coding style
+- `composer psalm` - Run static analysis
+- `composer test:unit` - Run unit tests
+
+### Testing
+
+Run the unit tests:
+```bash
+composer test:unit
+```
+
+## License
+
+This project is licensed under the AGPL-3.0-or-later license. See the [LICENSE](LICENSE) file for details.
