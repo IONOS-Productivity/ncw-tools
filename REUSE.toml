@@ -33,7 +33,7 @@ path = [
     ".github/git-commit-instructions.md"
 ]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # Documentation files
@@ -44,14 +44,14 @@ path = [
     "CODE_OF_CONDUCT.md"
 ]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # Generated CSS files
 [[annotations]]
 path = "css/*.css"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # Generated JS files
@@ -61,14 +61,14 @@ path = [
     "js/*.mjs.map"
 ]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # SVG assets
 [[annotations]]
 path = "img/*.svg"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # Vendor composer files in vendor-bin directories
@@ -78,7 +78,7 @@ path = [
     "vendor-bin/*/composer.lock"
 ]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # Cache and test files
@@ -88,7 +88,7 @@ path = [
     "tests/.phpunit.result.cache"
 ]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # PHP test and template files
@@ -98,7 +98,7 @@ path = [
     "templates/**/*.php"
 ]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # License files themselves
@@ -112,5 +112,5 @@ SPDX-License-Identifier = "GPL-3.0-only"
 [[annotations]]
 path = "REUSE.toml"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2025 STRATO GmbH"
+SPDX-FileCopyrightText = "2026 STRATO GmbH"
 SPDX-License-Identifier = "CC0-1.0"
