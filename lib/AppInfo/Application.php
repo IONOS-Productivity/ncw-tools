@@ -9,10 +9,12 @@ declare(strict_types=1);
 
 namespace OCA\NcwTools\AppInfo;
 
+use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\InstallationCompletedEvent;
 
 /**
  * @psalm-suppress UnusedClass
@@ -26,6 +28,7 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function register(IRegistrationContext $context): void {
+		$context->registerEventListener(InstallationCompletedEvent::class, InstallationCompletedEventListener::class);
 	}
 
 	public function boot(IBootContext $context): void {
