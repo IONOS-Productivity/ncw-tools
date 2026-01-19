@@ -14,6 +14,11 @@
 			"OCA\\NcwTools\\": "lib/"
 		}
 	},
+	"autoload-dev": {
+		"classmap": [
+			"tests/stubs/"
+		]
+	},
 	"scripts": {
 		"post-install-cmd": [
 			"@composer bin all install --ansi"

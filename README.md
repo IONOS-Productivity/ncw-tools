@@ -27,6 +27,22 @@ NCW Tools enhances Nextcloud with advanced system utilities including event list
    php occ app:enable ncw_tools
    ```
 
+## Configuration
+
+### Post-Installation Job Retry Interval
+
+The app includes a background job that sends a welcome email to the admin user after installation. You can configure how often this job retries by setting the following system configuration value in your `config/config.php`:
+
+```php
+'ncw_tools.post_setup_job.retry_interval' => 5, // Retry every 5 seconds (default: 2)
+```
+
+**Configuration Options:**
+- **Key:** `ncw_tools.post_setup_job.retry_interval`
+- **Type:** Integer (seconds)
+- **Default:** `2` seconds
+- **Description:** Interval in seconds between retry attempts for the post-installation welcome email job
+
 ## Development
 
 ### Prerequisites

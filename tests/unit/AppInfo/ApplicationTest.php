@@ -10,8 +10,10 @@ declare(strict_types=1);
 namespace OCA\NcwTools\Tests\Unit\AppInfo;
 
 use OCA\NcwTools\AppInfo\Application;
+use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\Install\Events\InstallationCompletedEvent;
 use PHPUnit\Framework\MockObject\MockObject;
 use Test\TestCase;
 
@@ -37,9 +39,15 @@ final class ApplicationTest extends TestCase {
 	}
 
 	public function testRegisterMethodExists(): void {
-		// Test that register method can be called without errors
-		// Since the method is currently empty, we just verify it doesn't throw
-		$this->expectNotToPerformAssertions();
+		// Test that register method registers the InstallationCompletedEvent listener
+		$this->registrationContext
+			->expects($this->once())
+			->method('registerEventListener')
+			->with(
+				InstallationCompletedEvent::class,
+				InstallationCompletedEventListener::class
+			);
+
 		$this->application->register($this->registrationContext);
 	}
 }
