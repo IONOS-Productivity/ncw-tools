@@ -17,5 +17,6 @@
     </projectFiles>
 	<extraFiles>
 		<directory name="vendor"/>
+		<directory name="tests/stubs"/>
 	</extraFiles>
 </psalm>

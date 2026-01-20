@@ -98,7 +98,7 @@ class WelcomeMailHelperTest extends TestCase {
 			$this->urlGenerator,
 			$this->l10NFactory,
 			$this->secureRandom,
-			$this->config,
+			$this->config
 		);
 	}
 

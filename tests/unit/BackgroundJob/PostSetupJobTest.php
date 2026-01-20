@@ -67,7 +67,7 @@ class PostSetupJobTest extends TestCase {
 
 		$this->logger->expects($this->once())
 			->method('debug')
-			->with('Job was already successful, remove from job from jobList');
+			->with('Job was already successful, remove job from jobList');
 
 		// Use reflection to call protected method
 		$reflection = new \ReflectionClass($this->job);

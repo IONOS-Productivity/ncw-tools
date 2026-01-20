@@ -14,7 +14,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use OCP\InstallationCompletedEvent;
+use OCP\Install\Events\InstallationCompletedEvent;
 
 /**
  * @psalm-suppress UnusedClass

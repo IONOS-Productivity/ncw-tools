@@ -15,18 +15,20 @@ use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
-use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
+/**
+ * @template-implements IEventListener<Event>
+ */
 class InstallationCompletedEventListener implements IEventListener {
-	private string $smtpConfigPath = '/vault/secrets/smtpconfig';
-
 	private string $adminConfigPath = '/vault/secrets/adminconfig';
 
 	private array $quotesArray = ['\\\'', '"', '\''];
 
+	/**
+	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
+	 */
 	public function __construct(
-		private IConfig $config,
 		private IAppConfig $appConfig,
 		private LoggerInterface $logger,
 		private IJobList $jobList,
@@ -40,10 +42,6 @@ class InstallationCompletedEventListener implements IEventListener {
 		$this->logger->debug('post Setup: init admin user');
 		$adminUserId = $this->initAdminUser();
 		$this->logger->debug('post Setup: admin user configured');
-
-		$this->logger->debug('post Setup: set send mail account');
-		$this->setSendMailAccount();
-		$this->logger->debug('post Setup: send mail account configured');
 
 		$this->logger->debug('post Setup: add send initial welcome mail job');
 		$this->jobList->add(PostSetupJob::class, $adminUserId);
@@ -61,50 +59,15 @@ class InstallationCompletedEventListener implements IEventListener {
 
 		// Iterate through the lines and extract the variables
 		foreach ($adminConfigLines as $line) {
-			[$key, $value] = explode('=', $line, 2);
-			$adminConfig[trim($key)] = trim($value);
+			$parts = explode('=', $line, 2);
+			if (count($parts) === 2) {
+				[$key, $value] = $parts;
+				$adminConfig[trim($key)] = trim($value);
+			}
 		}
 
-		return str_replace($this->quotesArray, '', $adminConfig['NEXTCLOUD_ADMIN_USER']);
-	}
-
-	protected function setSendMailAccount(): void {
-		$smtpConfigLines = file($this->smtpConfigPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-		$smtpConfig = [];
-
-		// Iterate through the lines and extract the variables
-		foreach ($smtpConfigLines as $line) {
-			[$key, $value] = explode('=', $line, 2);
-			$smtpConfig[trim($key)] = trim($value);
-		}
-
-		// Access the loaded variables
-		$smtpHost = str_replace($this->quotesArray, '', $smtpConfig['SMTP_HOST']);
-		$smtpPort = str_replace($this->quotesArray, '', $smtpConfig['SMTP_PORT']);
-
-		if (isset($smtpConfig['SMTP_SEC'])) {
-			$smtpSec = str_replace($this->quotesArray, '', $smtpConfig['SMTP_SEC']);
-		} else {
-			$smtpSec = 'tls';
-		}
-
-		$smtpName = str_replace($this->quotesArray, '', $smtpConfig['SMTP_NAME']);
-		$smtpPassword = str_replace($this->quotesArray, '', $smtpConfig['SMTP_PASSWORD']);
-		$mailFromAddress = str_replace($this->quotesArray, '', $smtpConfig['MAIL_FROM_ADDRESS']);
-		$mailDomain = str_replace($this->quotesArray, '', $smtpConfig['MAIL_DOMAIN']);
-
-		$this->config->setSystemValues([
-			'mail_smtpmode' => 'smtp',
-			'mail_smtphost' => $smtpHost,
-			'mail_smtpport' => $smtpPort,
-			'mail_smtpsecure' => $smtpSec,
-			'mail_smtpauth' => 'true',
-			'mail_smtpauthtype' => 'LOGIN',
-			'mail_smtpname' => $smtpName,
-			'mail_smtppassword' => $smtpPassword,
-			'mail_from_address' => $mailFromAddress,
-			'mail_domain' => $mailDomain
-		]);
+		$adminUser = $adminConfig['NEXTCLOUD_ADMIN_USER'] ?? '';
+		/** @psalm-suppress MixedArgumentTypeCoercion */
+		return str_replace($this->quotesArray, '', $adminUser);
 	}
 }

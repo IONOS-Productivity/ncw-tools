@@ -23,6 +23,9 @@ use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
 class PostSetupJob extends TimedJob {
+	/**
+	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
+	 */
 	public function __construct(
 		private LoggerInterface $logger,
 		private IAppConfig $appConfig,
@@ -39,12 +42,15 @@ class PostSetupJob extends TimedJob {
 		$this->setTimeSensitivity(IJob::TIME_SENSITIVE);
 	}
 
-	protected function run($argument) {
+	/**
+	 * @param mixed $argument
+	 */
+	protected function run($argument): void {
 		// string post install variable
 		// used to check if job has already run
 		$jobStatus = $this->appConfig->getValueString(Application::APP_ID, 'post_install', 'UNKNOWN');
 		if ($jobStatus === 'DONE') {
-			$this->logger->debug('Job was already successful, remove from job from jobList');
+			$this->logger->debug('Job was already successful, remove job from jobList');
 			$this->jobList->remove($this);
 			return;
 		}
@@ -55,15 +61,15 @@ class PostSetupJob extends TimedJob {
 		}
 
 		$this->logger->debug('Post install job started');
-		$initAdminId = $argument;
+		$initAdminId = (string)$argument;
 		$this->sendInitialWelcomeMail($initAdminId);
 		$this->logger->debug('Post install job finished');
 	}
 
-	protected function sendInitialWelcomeMail(string $adminUserId) {
+	protected function sendInitialWelcomeMail(string $adminUserId): void {
 
 		$client = $this->clientService->newClient();
-		$overwriteUrl = $this->config->getSystemValue('overwrite.cli.url');
+		$overwriteUrl = (string)$this->config->getSystemValue('overwrite.cli.url');
 		if (! $this->isUrlAvailable($client, $overwriteUrl)) {
 			$this->logger->debug('domain is not ready yet, retry with cron until ' . $overwriteUrl . ' is accessible');
 			return;
@@ -72,7 +78,9 @@ class PostSetupJob extends TimedJob {
 			$this->logger->warning('Could not find install user, skip sending welcome mail');
 		} else {
 			$initAdminUser = $this->userManager->get($adminUserId);
-			$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
+			if ($initAdminUser !== null) {
+				$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
+			}
 		}
 		$this->appConfig->setValueString(Application::APP_ID, 'post_install', 'DONE');
 		$this->jobList->remove($this);
@@ -80,15 +88,11 @@ class PostSetupJob extends TimedJob {
 
 	private function isUrlAvailable(IClient $client, string $baseUrl): bool {
 
+		$url = $baseUrl . '/status.php';
 		try {
-			$url = $baseUrl . '/status.php';
 			$this->logger->debug('Check URL: ' . $url);
 			$response = $client->get($url);
-			if ($response->getStatusCode() > 199 && $response->getStatusCode() < 300) {
-				return true;
-			} else {
-				return false;
-			}
+			return $response->getStatusCode() >= 200 && $response->getStatusCode() < 300;
 
 		} catch (\Exception $ex) {
 			$this->logger->debug('Exception for ' . $url . '. Reason: ' . $ex->getMessage());
