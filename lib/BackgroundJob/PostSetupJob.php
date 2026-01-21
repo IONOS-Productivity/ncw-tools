@@ -72,9 +72,14 @@ class PostSetupJob extends TimedJob {
 	}
 
 	protected function sendInitialWelcomeMail(string $adminUserId): void {
-
 		$client = $this->clientService->newClient();
 		$overwriteUrl = (string)$this->config->getSystemValue('overwrite.cli.url');
+
+		if (empty($overwriteUrl)) {
+			$this->logger->warning('overwrite.cli.url is not configured, skip sending welcome mail');
+			return;
+		}
+
 		if (! $this->isUrlAvailable($client, $overwriteUrl)) {
 			$this->logger->debug('domain is not ready yet, retry with cron until ' . $overwriteUrl . ' is accessible');
 			return;
