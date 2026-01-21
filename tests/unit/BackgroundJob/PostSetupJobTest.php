@@ -168,14 +168,18 @@ class PostSetupJobTest extends TestCase {
 			->method('newClient')
 			->willReturn($client);
 
-		// Expect 5 debug calls:
+		// Expect 4 debug calls:
 		// 1. "Post install job started"
-		// 2. "Check URL: ..."
-		// 3. "Exception for..."
-		// 4. "domain is not ready yet..."
-		// 5. "Post install job finished"
-		$this->logger->expects($this->exactly(5))
+		// 2. "Checking URL availability"
+		// 3. "domain is not ready yet..."
+		// 4. "Post install job finished"
+		$this->logger->expects($this->exactly(4))
 			->method('debug');
+
+		// Expect 1 info call for the exception
+		$this->logger->expects($this->once())
+			->method('info')
+			->with('URL not yet accessible', $this->anything());
 
 		$this->appConfig->expects($this->never())
 			->method('setValueString');
