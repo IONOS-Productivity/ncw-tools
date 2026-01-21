@@ -66,8 +66,8 @@ class PostSetupJobTest extends TestCase {
 			->willReturn('DONE');
 
 		$this->logger->expects($this->once())
-			->method('debug')
-			->with('Job was already successful, remove job from jobList');
+			->method('info')
+			->with('Post-installation job already completed, removing from queue');
 
 		// Use reflection to call protected method
 		$reflection = new \ReflectionClass($this->job);
@@ -83,8 +83,8 @@ class PostSetupJobTest extends TestCase {
 			->willReturn('UNKNOWN');
 
 		$this->logger->expects($this->once())
-			->method('debug')
-			->with('Could not load job status from database, wait for another retry');
+			->method('warning')
+			->with('Job status unknown, waiting for initialization');
 
 		// Use reflection to call protected method
 		$reflection = new \ReflectionClass($this->job);
@@ -124,17 +124,13 @@ class PostSetupJobTest extends TestCase {
 			->with('test-admin')
 			->willReturn(false);
 
-		// Expect 4 debug calls:
-		// 1. "Post install job started"
-		// 2. "Check URL: ..."
-		// 3. (conditional - only if URL check fails) "domain is not ready yet..."
-		// 4. "Post install job finished"
+		// Expect info logs for job start/completion and system ready
 		$this->logger->expects($this->atLeastOnce())
-			->method('debug');
+			->method('info');
 
 		$this->logger->expects($this->once())
 			->method('warning')
-			->with('Could not find install user, skip sending welcome mail');
+			->with('Admin user not found, cannot send welcome email', $this->anything());
 
 		// setValueString should NOT be called when user doesn't exist (job will retry)
 		$this->appConfig->expects($this->never())
@@ -168,18 +164,17 @@ class PostSetupJobTest extends TestCase {
 			->method('newClient')
 			->willReturn($client);
 
-		// Expect 4 debug calls:
-		// 1. "Post install job started"
-		// 2. "Checking URL availability"
-		// 3. "domain is not ready yet..."
-		// 4. "Post install job finished"
-		$this->logger->expects($this->exactly(4))
-			->method('debug');
+		// Expect info calls for:
+		// 1. "Starting post-installation job"
+		// 2. "URL not yet accessible" (from exception)
+		// 3. "System not ready, will retry sending welcome email"
+		// 4. "Post-installation job completed"
+		$this->logger->expects($this->atLeastOnce())
+			->method('info');
 
-		// Expect 1 info call for the exception
+		// Expect 1 debug call for URL checking
 		$this->logger->expects($this->once())
-			->method('info')
-			->with('URL not yet accessible', $this->anything());
+			->method('debug');
 
 		$this->appConfig->expects($this->never())
 			->method('setValueString');

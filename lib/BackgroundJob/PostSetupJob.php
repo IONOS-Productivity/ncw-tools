@@ -55,20 +55,20 @@ class PostSetupJob extends TimedJob {
 		// used to check if job has already run
 		$jobStatus = $this->appConfig->getValueString(Application::APP_ID, self::JOB_STATUS_CONFIG_KEY, self::JOB_STATUS_UNKNOWN);
 		if ($jobStatus === self::JOB_STATUS_DONE) {
-			$this->logger->debug('Job was already successful, remove job from jobList');
+			$this->logger->info('Post-installation job already completed, removing from queue');
 			$this->jobList->remove($this);
 			return;
 		}
 
 		if ($jobStatus === self::JOB_STATUS_UNKNOWN) {
-			$this->logger->debug('Could not load job status from database, wait for another retry');
+			$this->logger->warning('Job status unknown, waiting for initialization');
 			return;
 		}
 
-		$this->logger->debug('Post install job started');
 		$initAdminId = (string)$argument;
+		$this->logger->info('Starting post-installation job', ['adminUserId' => $initAdminId]);
 		$this->sendInitialWelcomeMail($initAdminId);
-		$this->logger->debug('Post install job finished');
+		$this->logger->info('Post-installation job completed', ['adminUserId' => $initAdminId]);
 	}
 
 	protected function sendInitialWelcomeMail(string $adminUserId): void {
@@ -76,16 +76,24 @@ class PostSetupJob extends TimedJob {
 		$overwriteUrl = (string)$this->config->getSystemValue('overwrite.cli.url');
 
 		if (empty($overwriteUrl)) {
-			$this->logger->warning('overwrite.cli.url is not configured, skip sending welcome mail');
+			$this->logger->warning('System URL not configured, cannot send welcome email', [
+				'adminUserId' => $adminUserId,
+				'config_key' => 'overwrite.cli.url',
+			]);
 			return;
 		}
 
 		if (! $this->isUrlAvailable($client, $overwriteUrl)) {
-			$this->logger->debug('domain is not ready yet, retry with cron until ' . $overwriteUrl . ' is accessible');
+			$this->logger->info('System not ready, will retry sending welcome email', [
+				'adminUserId' => $adminUserId,
+				'url' => $overwriteUrl,
+			]);
 			return;
 		}
 		if (! $this->userManager->userExists($adminUserId)) {
-			$this->logger->warning('Could not find install user, skip sending welcome mail');
+			$this->logger->warning('Admin user not found, cannot send welcome email', [
+				'adminUserId' => $adminUserId,
+			]);
 			return;
 		}
 
