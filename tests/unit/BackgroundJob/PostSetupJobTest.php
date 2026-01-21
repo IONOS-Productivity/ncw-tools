@@ -47,6 +47,19 @@ class PostSetupJobTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->welcomeMailHelper = $this->createMock(WelcomeMailHelper::class);
 
+		// Default config expectation for retry interval
+		$this->config->expects($this->any())
+			->method('getSystemValueInt')
+			->with('ncw_tools.post_setup_job.retry_interval', 2)
+			->willReturn(2);
+
+		// Expect debug log in constructor
+		$this->logger->expects($this->any())
+			->method('debug')
+			->willReturnCallback(function ($message, $context = []) {
+				// Allow any debug messages
+			});
+
 		$this->job = new PostSetupJob(
 			$this->logger,
 			$this->appConfig,
@@ -245,5 +258,61 @@ class PostSetupJobTest extends TestCase {
 		$method = $reflection->getMethod('run');
 		$method->setAccessible(true);
 		$method->invoke($this->job, 'test-admin');
+	}
+
+	public function testConstructorUsesDefaultRetryInterval(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$config = $this->createMock(IConfig::class);
+
+		$config->expects($this->once())
+			->method('getSystemValueInt')
+			->with('ncw_tools.post_setup_job.retry_interval', 2)
+			->willReturn(2);
+
+		$logger->expects($this->once())
+			->method('debug')
+			->with('PostSetupJob initialized', [
+				'retryInterval' => 2,
+				'timeSensitivity' => 'TIME_SENSITIVE',
+			]);
+
+		new PostSetupJob(
+			$logger,
+			$this->appConfig,
+			$config,
+			$this->userManager,
+			$this->clientService,
+			$this->timeFactory,
+			$this->jobList,
+			$this->welcomeMailHelper
+		);
+	}
+
+	public function testConstructorUsesCustomRetryInterval(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$config = $this->createMock(IConfig::class);
+
+		$config->expects($this->once())
+			->method('getSystemValueInt')
+			->with('ncw_tools.post_setup_job.retry_interval', 2)
+			->willReturn(10);
+
+		$logger->expects($this->once())
+			->method('debug')
+			->with('PostSetupJob initialized', [
+				'retryInterval' => 10,
+				'timeSensitivity' => 'TIME_SENSITIVE',
+			]);
+
+		new PostSetupJob(
+			$logger,
+			$this->appConfig,
+			$config,
+			$this->userManager,
+			$this->clientService,
+			$this->timeFactory,
+			$this->jobList,
+			$this->welcomeMailHelper
+		);
 	}
 }

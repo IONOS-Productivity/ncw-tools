@@ -45,6 +45,10 @@ class PostSetupJob extends TimedJob {
 		$retryInterval = $this->config->getSystemValueInt('ncw_tools.post_setup_job.retry_interval', 2);
 		$this->setInterval($retryInterval);
 		$this->setTimeSensitivity(IJob::TIME_SENSITIVE);
+		$this->logger->debug('PostSetupJob initialized', [
+			'retryInterval' => $retryInterval,
+			'timeSensitivity' => 'TIME_SENSITIVE',
+		]);
 	}
 
 	/**
