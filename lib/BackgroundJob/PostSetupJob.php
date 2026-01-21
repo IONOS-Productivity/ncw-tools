@@ -105,7 +105,16 @@ class PostSetupJob extends TimedJob {
 			return;
 		}
 
-		$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
+		try {
+			$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
+		} catch (\Throwable $e) {
+			$this->logger->error('Failed to send welcome email, will retry', [
+				'adminUserId' => $adminUserId,
+				'exception' => $e->getMessage(),
+			]);
+			return;
+		}
+
 		$this->appConfig->setValueString(Application::APP_ID, self::JOB_STATUS_CONFIG_KEY, self::JOB_STATUS_DONE);
 		$this->jobList->remove($this);
 	}
