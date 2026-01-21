@@ -136,10 +136,9 @@ class PostSetupJobTest extends TestCase {
 			->method('warning')
 			->with('Could not find install user, skip sending welcome mail');
 
-		// setValueString is called even when user doesn't exist
-		$this->appConfig->expects($this->once())
-			->method('setValueString')
-			->with('ncw_tools', 'post_install', 'DONE');
+		// setValueString should NOT be called when user doesn't exist (job will retry)
+		$this->appConfig->expects($this->never())
+			->method('setValueString');
 
 		// Use reflection to call protected method
 		$reflection = new \ReflectionClass($this->job);

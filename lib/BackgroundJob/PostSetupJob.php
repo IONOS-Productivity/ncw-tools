@@ -81,11 +81,12 @@ class PostSetupJob extends TimedJob {
 		}
 		if (! $this->userManager->userExists($adminUserId)) {
 			$this->logger->warning('Could not find install user, skip sending welcome mail');
-		} else {
-			$initAdminUser = $this->userManager->get($adminUserId);
-			if ($initAdminUser !== null) {
-				$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
-			}
+			return;
+		}
+
+		$initAdminUser = $this->userManager->get($adminUserId);
+		if ($initAdminUser !== null) {
+			$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
 		}
 		$this->appConfig->setValueString(Application::APP_ID, self::JOB_STATUS_CONFIG_KEY, self::JOB_STATUS_DONE);
 		$this->jobList->remove($this);
