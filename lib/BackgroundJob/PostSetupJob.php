@@ -27,6 +27,7 @@ class PostSetupJob extends TimedJob {
 	public const JOB_STATUS_DONE = 'DONE';
 	public const JOB_STATUS_UNKNOWN = 'UNKNOWN';
 	public const JOB_STATUS_CONFIG_KEY = 'post_install';
+	private const RETRY_INTERVAL_SECONDS = 2;
 
 	/**
 	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
@@ -42,8 +43,7 @@ class PostSetupJob extends TimedJob {
 		private WelcomeMailHelper $welcomeMailHelper,
 	) {
 		parent::__construct($timeFactory);
-		// Interval every 2 seconds
-		$this->setInterval(2);
+		$this->setInterval(self::RETRY_INTERVAL_SECONDS);
 		$this->setTimeSensitivity(IJob::TIME_SENSITIVE);
 	}
 
