@@ -48,7 +48,12 @@ class PostSetupJob extends TimedJob {
 	}
 
 	/**
-	 * @param mixed $argument
+	 * Execute the post-installation job
+	 *
+	 * Checks if the job has already completed and sends the initial welcome email
+	 * to the admin user. The job will retry until successful or marked as done.
+	 *
+	 * @param mixed $argument The admin user ID as a string
 	 */
 	protected function run($argument): void {
 		// string post install variable
@@ -71,6 +76,15 @@ class PostSetupJob extends TimedJob {
 		$this->logger->info('Post-installation job completed', ['adminUserId' => $initAdminId]);
 	}
 
+	/**
+	 * Send initial welcome email to the admin user
+	 *
+	 * Validates system URL configuration, checks URL availability, verifies user exists,
+	 * and sends the welcome email with a password reset token. On success, marks the job
+	 * as done and removes it from the queue. Failures are logged and will trigger a retry.
+	 *
+	 * @param string $adminUserId The admin user ID to send the welcome email to
+	 */
 	protected function sendInitialWelcomeMail(string $adminUserId): void {
 		$client = $this->clientService->newClient();
 		$overwriteUrl = (string)$this->config->getSystemValue('overwrite.cli.url');
@@ -119,6 +133,16 @@ class PostSetupJob extends TimedJob {
 		$this->jobList->remove($this);
 	}
 
+	/**
+	 * Check if the system URL is accessible
+	 *
+	 * Performs an HTTP GET request to the status.php endpoint to verify the system
+	 * is ready. Returns true if the response status code is in the 2xx range.
+	 *
+	 * @param IClient $client The HTTP client to use for the request
+	 * @param string $baseUrl The base URL to check (e.g., https://example.com)
+	 * @return bool True if the URL is accessible, false otherwise
+	 */
 	private function isUrlAvailable(IClient $client, string $baseUrl): bool {
 		$url = $baseUrl . '/status.php';
 		try {
