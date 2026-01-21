@@ -33,6 +33,14 @@ class InstallationCompletedEventListener implements IEventListener {
 	) {
 	}
 
+	/**
+	 * Handle the InstallationCompletedEvent
+	 *
+	 * When installation completes, this listener schedules a PostSetupJob
+	 * to send the initial welcome email to the admin user.
+	 *
+	 * @param Event $event The event to handle (must be InstallationCompletedEvent)
+	 */
 	public function handle(Event $event): void {
 		if (!$event instanceof InstallationCompletedEvent) {
 			return;
