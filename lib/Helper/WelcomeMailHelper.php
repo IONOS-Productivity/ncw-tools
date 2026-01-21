@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace OCA\NcwTools\Helper;
 
-use OC\AppFramework\Utility\TimeFactory;
 use OCA\Settings\Mailer\NewUserMailHelper;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Defaults;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -33,6 +33,7 @@ class WelcomeMailHelper {
 		private IFactory $l10NFactory,
 		private ISecureRandom $secureRandom,
 		private IConfig $config,
+		private ITimeFactory $timeFactory,
 	) {
 	}
 
@@ -48,7 +49,7 @@ class WelcomeMailHelper {
 			$this->l10NFactory,
 			$this->mailer,
 			$this->secureRandom,
-			new TimeFactory(),
+			$this->timeFactory,
 			$this->config,
 			$this->crypto,
 			Util::getDefaultEmailAddress('no-reply')

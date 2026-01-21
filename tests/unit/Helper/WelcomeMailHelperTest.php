@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\NcwTools\Tests\Unit\Helper;
 
 use OCA\NcwTools\Helper\WelcomeMailHelper;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Defaults;
 use OCP\IConfig;
 use OCP\IL10N;
@@ -32,6 +33,7 @@ class WelcomeMailHelperTest extends TestCase {
 	private IFactory&MockObject $l10NFactory;
 	private ISecureRandom&MockObject $secureRandom;
 	private IConfig&MockObject $config;
+	private ITimeFactory&MockObject $timeFactory;
 	private WelcomeMailHelper $welcomeMailHelper;
 
 	protected function setUp(): void {
@@ -44,6 +46,7 @@ class WelcomeMailHelperTest extends TestCase {
 		$this->l10NFactory = $this->createMock(IFactory::class);
 		$this->secureRandom = $this->createMock(ISecureRandom::class);
 		$this->config = $this->createMock(IConfig::class);
+		$this->timeFactory = $this->createMock(ITimeFactory::class);
 
 		// Mock IL10N for l10NFactory
 		$l10n = $this->createMock(IL10N::class);
@@ -98,7 +101,8 @@ class WelcomeMailHelperTest extends TestCase {
 			$this->urlGenerator,
 			$this->l10NFactory,
 			$this->secureRandom,
-			$this->config
+			$this->config,
+			$this->timeFactory
 		);
 	}
 
@@ -147,6 +151,7 @@ class WelcomeMailHelperTest extends TestCase {
 			$this->l10NFactory,
 			$this->secureRandom,
 			$this->config,
+			$this->timeFactory
 		);
 
 		$this->assertInstanceOf(WelcomeMailHelper::class, $helper);
