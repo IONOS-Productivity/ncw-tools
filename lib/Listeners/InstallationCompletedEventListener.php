@@ -21,7 +21,10 @@ use Psr\Log\LoggerInterface;
  * @template-implements IEventListener<Event>
  */
 class InstallationCompletedEventListener implements IEventListener {
-	private string $adminConfigPath = '/vault/secrets/adminconfig';
+	private const ADMIN_CONFIG_PATH = '/vault/secrets/adminconfig';
+	private const ADMIN_USER_KEY = 'NEXTCLOUD_ADMIN_USER';
+
+	private string $adminConfigPath = self::ADMIN_CONFIG_PATH;
 
 	private array $quotesArray = ['\\\'', '"', '\''];
 
@@ -37,7 +40,7 @@ class InstallationCompletedEventListener implements IEventListener {
 
 	public function handle(Event $event): void {
 
-		$this->appConfig->setValueString(Application::APP_ID, 'post_install', 'INIT');
+		$this->appConfig->setValueString(Application::APP_ID, PostSetupJob::JOB_STATUS_CONFIG_KEY, PostSetupJob::JOB_STATUS_INIT);
 
 		$this->logger->debug('post Setup: init admin user');
 		$adminUserId = $this->initAdminUser();
@@ -66,7 +69,7 @@ class InstallationCompletedEventListener implements IEventListener {
 			}
 		}
 
-		$adminUser = $adminConfig['NEXTCLOUD_ADMIN_USER'] ?? '';
+		$adminUser = $adminConfig[self::ADMIN_USER_KEY] ?? '';
 		/** @psalm-suppress MixedArgumentTypeCoercion */
 		return str_replace($this->quotesArray, '', $adminUser);
 	}

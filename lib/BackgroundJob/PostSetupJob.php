@@ -23,6 +23,11 @@ use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
 class PostSetupJob extends TimedJob {
+	public const JOB_STATUS_INIT = 'INIT';
+	public const JOB_STATUS_DONE = 'DONE';
+	public const JOB_STATUS_UNKNOWN = 'UNKNOWN';
+	public const JOB_STATUS_CONFIG_KEY = 'post_install';
+
 	/**
 	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
 	 */
@@ -48,14 +53,14 @@ class PostSetupJob extends TimedJob {
 	protected function run($argument): void {
 		// string post install variable
 		// used to check if job has already run
-		$jobStatus = $this->appConfig->getValueString(Application::APP_ID, 'post_install', 'UNKNOWN');
-		if ($jobStatus === 'DONE') {
+		$jobStatus = $this->appConfig->getValueString(Application::APP_ID, self::JOB_STATUS_CONFIG_KEY, self::JOB_STATUS_UNKNOWN);
+		if ($jobStatus === self::JOB_STATUS_DONE) {
 			$this->logger->debug('Job was already successful, remove job from jobList');
 			$this->jobList->remove($this);
 			return;
 		}
 
-		if ($jobStatus === 'UNKNOWN') {
+		if ($jobStatus === self::JOB_STATUS_UNKNOWN) {
 			$this->logger->debug('Could not load job status from database, wait for another retry');
 			return;
 		}
@@ -82,7 +87,7 @@ class PostSetupJob extends TimedJob {
 				$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
 			}
 		}
-		$this->appConfig->setValueString(Application::APP_ID, 'post_install', 'DONE');
+		$this->appConfig->setValueString(Application::APP_ID, self::JOB_STATUS_CONFIG_KEY, self::JOB_STATUS_DONE);
 		$this->jobList->remove($this);
 	}
 
