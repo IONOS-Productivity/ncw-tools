@@ -98,9 +98,14 @@ class PostSetupJob extends TimedJob {
 		}
 
 		$initAdminUser = $this->userManager->get($adminUserId);
-		if ($initAdminUser !== null) {
-			$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
+		if ($initAdminUser === null) {
+			$this->logger->error('Failed to retrieve admin user, will retry', [
+				'adminUserId' => $adminUserId,
+			]);
+			return;
 		}
+
+		$this->welcomeMailHelper->sendWelcomeMail($initAdminUser, true);
 		$this->appConfig->setValueString(Application::APP_ID, self::JOB_STATUS_CONFIG_KEY, self::JOB_STATUS_DONE);
 		$this->jobList->remove($this);
 	}
