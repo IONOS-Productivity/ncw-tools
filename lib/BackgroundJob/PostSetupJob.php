@@ -92,13 +92,12 @@ class PostSetupJob extends TimedJob {
 	}
 
 	private function isUrlAvailable(IClient $client, string $baseUrl): bool {
-
 		$url = $baseUrl . '/status.php';
 		try {
 			$this->logger->debug('Check URL: ' . $url);
 			$response = $client->get($url);
-			return $response->getStatusCode() >= 200 && $response->getStatusCode() < 300;
-
+			$statusCode = $response->getStatusCode();
+			return $statusCode >= 200 && $statusCode < 300;
 		} catch (\Exception $ex) {
 			$this->logger->debug('Exception for ' . $url . '. Reason: ' . $ex->getMessage());
 			return false;
