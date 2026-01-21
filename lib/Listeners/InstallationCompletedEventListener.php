@@ -46,8 +46,8 @@ class InstallationCompletedEventListener implements IEventListener {
 			return;
 		}
 
-		$this->logger->debug('post Setup: add send initial welcome mail job for user: ' . $adminUserId);
+		$this->logger->info('Scheduling welcome email job', ['adminUserId' => $adminUserId]);
 		$this->jobList->add(PostSetupJob::class, $adminUserId);
-		$this->logger->debug('post Setup: job added');
+		$this->logger->debug('Welcome email job scheduled successfully', ['adminUserId' => $adminUserId]);
 	}
 }
