@@ -22,9 +22,6 @@ use OCP\Security\ISecureRandom;
 use OCP\Util;
 
 class WelcomeMailHelper {
-	/**
-	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
-	 */
 	public function __construct(
 		private Defaults $defaults,
 		private ICrypto $crypto,
@@ -46,10 +43,6 @@ class WelcomeMailHelper {
 	 * @param IUser $user The user to send the welcome email to
 	 * @param bool $generatePasswordResetToken Whether to include a password reset token in the email
 	 * @throws \Exception If email generation or sending fails
-	 *
-	 * @psalm-suppress UndefinedClass - Using internal Nextcloud classes
-	 * @psalm-suppress MixedAssignment
-	 * @psalm-suppress MixedMethodCall
 	 */
 	public function sendWelcomeMail(IUser $user, bool $generatePasswordResetToken): void {
 		$newUserMailHelper = new NewUserMailHelper(

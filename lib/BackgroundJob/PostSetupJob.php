@@ -28,9 +28,6 @@ class PostSetupJob extends TimedJob {
 	public const JOB_STATUS_UNKNOWN = 'UNKNOWN';
 	public const JOB_STATUS_CONFIG_KEY = 'post_install';
 
-	/**
-	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
-	 */
 	public function __construct(
 		private LoggerInterface $logger,
 		private IAppConfig $appConfig,

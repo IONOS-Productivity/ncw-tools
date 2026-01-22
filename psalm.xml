@@ -20,4 +20,19 @@
 		<directory name="vendor"/>
 		<directory name="tests/stubs"/>
 	</extraFiles>
+	<issueHandlers>
+		<UnusedClass>
+			<errorLevel type="suppress">
+				<referencedClass name="OCA\NcwTools\AppInfo\Application" />
+			</errorLevel>
+		</UnusedClass>
+		<PossiblyUnusedMethod>
+			<errorLevel type="suppress">
+				<referencedMethod name="OCA\NcwTools\AppInfo\Application::__construct" />
+				<referencedMethod name="OCA\NcwTools\BackgroundJob\PostSetupJob::__construct" />
+				<referencedMethod name="OCA\NcwTools\Helper\WelcomeMailHelper::__construct" />
+				<referencedMethod name="OCA\NcwTools\Listeners\InstallationCompletedEventListener::__construct" />
+			</errorLevel>
+		</PossiblyUnusedMethod>
+	</issueHandlers>
 </psalm>

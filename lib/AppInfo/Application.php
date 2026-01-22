@@ -16,13 +16,9 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Install\Events\InstallationCompletedEvent;
 
-/**
- * @psalm-suppress UnusedClass
- */
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'ncw_tools';
 
-	/** @psalm-suppress PossiblyUnusedMethod */
 	public function __construct() {
 		parent::__construct(self::APP_ID);
 	}

@@ -23,9 +23,6 @@ use Psr\Log\LoggerInterface;
  */
 class InstallationCompletedEventListener implements IEventListener {
 
-	/**
-	 * @psalm-suppress PossiblyUnusedMethod - Constructor called by DI container
-	 */
 	public function __construct(
 		private IAppConfig $appConfig,
 		private LoggerInterface $logger,
