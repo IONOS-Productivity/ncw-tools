@@ -108,38 +108,89 @@ class WelcomeMailHelperTest extends TestCase {
 
 	public function testSendWelcomeMailWithPasswordResetToken(): void {
 		$user = $this->createMock(IUser::class);
-		$user->expects($this->atLeastOnce())
-			->method('getUID')
-			->willReturn('testuser');
-		$user->expects($this->atLeastOnce())
-			->method('getEMailAddress')
-			->willReturn('testuser@example.com');
+		$user->method('getUID')->willReturn('testuser');
+		$user->method('getDisplayName')->willReturn('Test User');
+		$user->method('getEMailAddress')->willReturn('testuser@example.com');
+		$user->method('getBackendClassName')->willReturn('Database');
 
-		// The method should not throw any exceptions
-		try {
-			$this->welcomeMailHelper->sendWelcomeMail($user, true);
-			$this->assertTrue(true); // Explicit assertion that we got here without exception
-		} catch (\Exception $e) {
-			$this->fail('sendWelcomeMail should not throw exceptions: ' . $e->getMessage());
-		}
+		// Mock l10n for getUserLanguage
+		$this->l10NFactory->expects($this->once())
+			->method('getUserLanguage')
+			->with($user)
+			->willReturn('en');
+
+		// Mock time factory for password reset token generation
+		$this->timeFactory->expects($this->once())
+			->method('getTime')
+			->willReturn(1234567890);
+
+		// Mock config for setUserValue (password reset token storage)
+		$this->config->expects($this->once())
+			->method('setUserValue')
+			->with('testuser', 'core', 'lostpassword', $this->anything());
+
+		// Mock config for getSystemValue (secret key)
+		$this->config->expects($this->atLeastOnce())
+			->method('getSystemValue')
+			->willReturnMap([
+				['customclient_desktop', 'https://nextcloud.com/install/#install-clients', 'https://nextcloud.com/install/#install-clients'],
+				['secret', '', 'test-secret'],
+			]);
+
+		// Expect email to be sent
+		$this->mailer->expects($this->once())
+			->method('send')
+			->with($this->isInstanceOf(IMessage::class));
+
+		$this->welcomeMailHelper->sendWelcomeMail($user, true);
 	}
 
 	public function testSendWelcomeMailWithoutPasswordResetToken(): void {
 		$user = $this->createMock(IUser::class);
-		$user->expects($this->atLeastOnce())
-			->method('getUID')
-			->willReturn('testuser');
-		$user->expects($this->atLeastOnce())
-			->method('getEMailAddress')
-			->willReturn('testuser@example.com');
+		$user->method('getUID')->willReturn('testuser');
+		$user->method('getDisplayName')->willReturn('Test User');
+		$user->method('getEMailAddress')->willReturn('testuser@example.com');
+		$user->method('getBackendClassName')->willReturn('Database');
 
-		// The method should not throw any exceptions
-		try {
-			$this->welcomeMailHelper->sendWelcomeMail($user, false);
-			$this->assertTrue(true); // Explicit assertion that we got here without exception
-		} catch (\Exception $e) {
-			$this->fail('sendWelcomeMail should not throw exceptions: ' . $e->getMessage());
-		}
+		// Mock l10n for getUserLanguage
+		$this->l10NFactory->expects($this->once())
+			->method('getUserLanguage')
+			->with($user)
+			->willReturn('en');
+
+		// Should not generate password reset token
+		$this->timeFactory->expects($this->never())
+			->method('getTime');
+
+		$this->config->expects($this->never())
+			->method('setUserValue');
+
+		// Expect email to be sent
+		$this->mailer->expects($this->once())
+			->method('send')
+			->with($this->isInstanceOf(IMessage::class));
+
+		$this->welcomeMailHelper->sendWelcomeMail($user, false);
+	}
+
+	public function testSendWelcomeMailDoesNotSendToUserWithoutEmail(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+		$user->method('getDisplayName')->willReturn('Test User');
+		$user->method('getEMailAddress')->willReturn(null);
+		$user->method('getBackendClassName')->willReturn('Database');
+
+		// Mock l10n for getUserLanguage
+		$this->l10NFactory->expects($this->once())
+			->method('getUserLanguage')
+			->with($user)
+			->willReturn('en');
+
+		// Should not send email if user has no email address
+		$this->mailer->expects($this->never())
+			->method('send');
+
+		$this->welcomeMailHelper->sendWelcomeMail($user, false);
 	}
 
 	public function testConstructorInitializesCorrectly(): void {
