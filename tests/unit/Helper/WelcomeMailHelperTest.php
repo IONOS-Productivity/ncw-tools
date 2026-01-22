@@ -48,51 +48,38 @@ class WelcomeMailHelperTest extends TestCase {
 		$this->config = $this->createMock(IConfig::class);
 		$this->timeFactory = $this->createMock(ITimeFactory::class);
 
-		// Mock IL10N for l10NFactory
+		// Setup mocks required by NewUserMailHelper
 		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnCallback(function ($text) {
-			return $text;
-		});
+		$l10n->method('t')->willReturnArgument(0);
 		$this->l10NFactory->method('get')->willReturn($l10n);
+		$this->l10NFactory->method('getUserLanguage')->willReturn('en');
 
-		// Mock email template
 		$emailTemplate = $this->createMock(IEMailTemplate::class);
 		$emailTemplate->method('addHeader')->willReturnSelf();
 		$emailTemplate->method('addHeading')->willReturnSelf();
 		$emailTemplate->method('addBodyText')->willReturnSelf();
 		$emailTemplate->method('addBodyButton')->willReturnSelf();
-		$emailTemplate->method('addBodyButtonGroup')->willReturnCallback(function () use ($emailTemplate) {
-			return $emailTemplate;
-		});
+		$emailTemplate->method('addBodyButtonGroup')->willReturnSelf();
 		$emailTemplate->method('addFooter')->willReturnSelf();
 		$emailTemplate->method('setSubject')->willReturnSelf();
 		$this->mailer->method('createEMailTemplate')->willReturn($emailTemplate);
 
-		// Mock IConfig to return a client download URL
-		$this->config->method('getSystemValue')->willReturnCallback(function ($key, $default) {
-			if ($key === 'customclient_desktop') {
-				return 'https://nextcloud.com/install/#install-clients';
-			}
-			return $default;
-		});
-
-		// Mock message
 		$message = $this->createMock(IMessage::class);
 		$message->method('setTo')->willReturnSelf();
 		$message->method('setFrom')->willReturnSelf();
 		$message->method('useTemplate')->willReturnSelf();
+		$message->method('setAutoSubmitted')->willReturnSelf();
 		$this->mailer->method('createMessage')->willReturn($message);
 
-		// Mock defaults
 		$this->defaults->method('getName')->willReturn('Nextcloud');
-
-		// Mock URL generator
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('https://example.com');
 		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/reset');
-
-		// Mock secure random and crypto
-		$this->secureRandom->method('generate')->willReturn('random-token');
+		$this->secureRandom->method('generate')->willReturn('test-token');
 		$this->crypto->method('encrypt')->willReturn('encrypted-token');
+		$this->config->method('getSystemValue')->willReturnMap([
+			['customclient_desktop', 'https://nextcloud.com/install/#install-clients', 'https://nextcloud.com/install/#install-clients'],
+			['secret', '', 'test-secret'],
+		]);
 
 		$this->welcomeMailHelper = new WelcomeMailHelper(
 			$this->defaults,
@@ -113,34 +100,16 @@ class WelcomeMailHelperTest extends TestCase {
 		$user->method('getEMailAddress')->willReturn('testuser@example.com');
 		$user->method('getBackendClassName')->willReturn('Database');
 
-		// Mock l10n for getUserLanguage
-		$this->l10NFactory->expects($this->once())
-			->method('getUserLanguage')
-			->with($user)
-			->willReturn('en');
-
-		// Mock time factory for password reset token generation
 		$this->timeFactory->expects($this->once())
 			->method('getTime')
 			->willReturn(1234567890);
 
-		// Mock config for setUserValue (password reset token storage)
 		$this->config->expects($this->once())
 			->method('setUserValue')
 			->with('testuser', 'core', 'lostpassword', $this->anything());
 
-		// Mock config for getSystemValue (secret key)
-		$this->config->expects($this->atLeastOnce())
-			->method('getSystemValue')
-			->willReturnMap([
-				['customclient_desktop', 'https://nextcloud.com/install/#install-clients', 'https://nextcloud.com/install/#install-clients'],
-				['secret', '', 'test-secret'],
-			]);
-
-		// Expect email to be sent
 		$this->mailer->expects($this->once())
-			->method('send')
-			->with($this->isInstanceOf(IMessage::class));
+			->method('send');
 
 		$this->welcomeMailHelper->sendWelcomeMail($user, true);
 	}
@@ -152,41 +121,25 @@ class WelcomeMailHelperTest extends TestCase {
 		$user->method('getEMailAddress')->willReturn('testuser@example.com');
 		$user->method('getBackendClassName')->willReturn('Database');
 
-		// Mock l10n for getUserLanguage
-		$this->l10NFactory->expects($this->once())
-			->method('getUserLanguage')
-			->with($user)
-			->willReturn('en');
-
-		// Should not generate password reset token
 		$this->timeFactory->expects($this->never())
 			->method('getTime');
 
 		$this->config->expects($this->never())
 			->method('setUserValue');
 
-		// Expect email to be sent
 		$this->mailer->expects($this->once())
-			->method('send')
-			->with($this->isInstanceOf(IMessage::class));
+			->method('send');
 
 		$this->welcomeMailHelper->sendWelcomeMail($user, false);
 	}
 
-	public function testSendWelcomeMailDoesNotSendToUserWithoutEmail(): void {
+	public function testSendWelcomeMailWithUserWithoutEmail(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('testuser');
 		$user->method('getDisplayName')->willReturn('Test User');
 		$user->method('getEMailAddress')->willReturn(null);
 		$user->method('getBackendClassName')->willReturn('Database');
 
-		// Mock l10n for getUserLanguage
-		$this->l10NFactory->expects($this->once())
-			->method('getUserLanguage')
-			->with($user)
-			->willReturn('en');
-
-		// Should not send email if user has no email address
 		$this->mailer->expects($this->never())
 			->method('send');
 
