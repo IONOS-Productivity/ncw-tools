@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\NcwTools\AppInfo;
 
+use OCA\NcwTools\Capabilities;
 use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
@@ -25,6 +26,7 @@ class Application extends App implements IBootstrap {
 
 	public function register(IRegistrationContext $context): void {
 		$context->registerEventListener(InstallationCompletedEvent::class, InstallationCompletedEventListener::class);
+		$context->registerCapability(Capabilities::class);
 	}
 
 	public function boot(IBootContext $context): void {
