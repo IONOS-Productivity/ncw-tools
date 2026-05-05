@@ -11,11 +11,14 @@ namespace OCA\NcwTools\AppInfo;
 
 use OCA\NcwTools\Capabilities;
 use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
+use OCA\NcwTools\Listeners\UserEventListener;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Install\Events\InstallationCompletedEvent;
+use OCP\User\Events\UserCreatedEvent;
+use OCP\User\Events\UserDeletedEvent;
 
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'ncw_tools';
@@ -26,6 +29,8 @@ class Application extends App implements IBootstrap {
 
 	public function register(IRegistrationContext $context): void {
 		$context->registerEventListener(InstallationCompletedEvent::class, InstallationCompletedEventListener::class);
+		$context->registerEventListener(UserCreatedEvent::class, UserEventListener::class);
+		$context->registerEventListener(UserDeletedEvent::class, UserEventListener::class);
 		$context->registerCapability(Capabilities::class);
 	}
 

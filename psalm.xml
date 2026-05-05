@@ -30,8 +30,10 @@
 			<errorLevel type="suppress">
 				<referencedMethod name="OCA\NcwTools\AppInfo\Application::__construct" />
 				<referencedMethod name="OCA\NcwTools\BackgroundJob\PostSetupJob::__construct" />
+				<referencedMethod name="OCA\NcwTools\BackgroundJob\UserStatsJob::__construct" />
 				<referencedMethod name="OCA\NcwTools\Helper\WelcomeMailHelper::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\InstallationCompletedEventListener::__construct" />
+				<referencedMethod name="OCA\NcwTools\Listeners\UserEventListener::__construct" />
 			</errorLevel>
 		</PossiblyUnusedMethod>
 	</issueHandlers>

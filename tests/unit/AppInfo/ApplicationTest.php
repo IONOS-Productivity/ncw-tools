@@ -11,9 +11,12 @@ namespace OCA\NcwTools\Tests\Unit\AppInfo;
 
 use OCA\NcwTools\AppInfo\Application;
 use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
+use OCA\NcwTools\Listeners\UserEventListener;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Install\Events\InstallationCompletedEvent;
+use OCP\User\Events\UserCreatedEvent;
+use OCP\User\Events\UserDeletedEvent;
 use PHPUnit\Framework\MockObject\MockObject;
 use Test\TestCase;
 
@@ -38,16 +41,18 @@ final class ApplicationTest extends TestCase {
 		$this->assertInstanceOf(Application::class, $app);
 	}
 
-	public function testRegisterMethodExists(): void {
-		// Test that register method registers the InstallationCompletedEvent listener
+	public function testRegisterListensToUserEvents(): void {
+		$calls = [];
 		$this->registrationContext
-			->expects($this->once())
 			->method('registerEventListener')
-			->with(
-				InstallationCompletedEvent::class,
-				InstallationCompletedEventListener::class
-			);
+			->willReturnCallback(function (string $event, string $listener) use (&$calls): void {
+				$calls[] = [$event, $listener];
+			});
 
 		$this->application->register($this->registrationContext);
+
+		$this->assertContains([InstallationCompletedEvent::class, InstallationCompletedEventListener::class], $calls);
+		$this->assertContains([UserCreatedEvent::class, UserEventListener::class], $calls);
+		$this->assertContains([UserDeletedEvent::class, UserEventListener::class], $calls);
 	}
 }
