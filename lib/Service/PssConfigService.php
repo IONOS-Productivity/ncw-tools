@@ -10,53 +10,31 @@ declare(strict_types=1);
 namespace OCA\NcwTools\Service;
 
 use OCP\IConfig;
-use Psr\Log\LoggerInterface;
 
 class PssConfigService {
 
 	public function __construct(
 		private IConfig $config,
-		private LoggerInterface $logger,
 	) {
 	}
 
 	public function getBrand(): string {
-		$value = $this->config->getSystemValueString('ncw_tools.pss.brand');
-		if ($value === '') {
-			$this->logger->error('PssConfigService: ncw_tools.pss.brand is not configured');
-		}
-		return $value;
+		return $this->config->getSystemValueString('ncw_tools.pss.brand');
 	}
 
 	public function getExtRef(): string {
-		$value = $this->config->getSystemValueString('ncw_tools.pss.ext_ref');
-		if ($value === '') {
-			$this->logger->error('PssConfigService: ncw_tools.pss.ext_ref is not configured');
-		}
-		return $value;
+		return $this->config->getSystemValueString('ncw_tools.pss.ext_ref');
 	}
 
 	public function getBaseUrl(): string {
-		$value = $this->config->getSystemValueString('ncw_tools.pss.base_url');
-		if ($value === '') {
-			$this->logger->error('PssConfigService: ncw_tools.pss.base_url is not configured');
-		}
-		return $value;
+		return $this->config->getSystemValueString('ncw_tools.pss.base_url');
 	}
 
 	public function getUsername(): string {
-		$value = $this->config->getSystemValueString('ncw_tools.pss.username');
-		if ($value === '') {
-			$this->logger->error('PssConfigService: ncw_tools.pss.username is not configured');
-		}
-		return $value;
+		return $this->config->getSystemValueString('ncw_tools.pss.username');
 	}
 
 	public function getPassword(): string {
-		$value = $this->config->getSystemValueString('ncw_tools.pss.password');
-		if ($value === '') {
-			$this->logger->error('PssConfigService: ncw_tools.pss.password is not configured');
-		}
-		return $value;
+		return $this->config->getSystemValueString('ncw_tools.pss.password');
 	}
 }

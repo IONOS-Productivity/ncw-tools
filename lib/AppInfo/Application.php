@@ -9,9 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\NcwTools\AppInfo;
 
-if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
-	require_once __DIR__ . '/../../vendor/autoload.php';
-}
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use OCA\NcwTools\Capabilities;
 use OCA\NcwTools\Listeners\InstallationCompletedEventListener;

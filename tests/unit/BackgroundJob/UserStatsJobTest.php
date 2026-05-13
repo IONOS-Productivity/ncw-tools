@@ -90,7 +90,8 @@ class UserStatsJobTest extends TestCase {
 		$this->logger->expects($this->once())
 			->method('error')
 			->with('UserStatsJob: failed to push stats to PSS', $this->callback(function (array $ctx): bool {
-				return str_contains($ctx['exception'], 'connection refused');
+				return $ctx['exception'] instanceof \Exception
+					&& str_contains($ctx['exception']->getMessage(), 'connection refused');
 			}));
 
 		$this->invokePrivate($this->job, 'run', [null]);
@@ -103,6 +104,35 @@ class UserStatsJobTest extends TestCase {
 		$this->configService->method('getBrand')->willReturn('');
 		$this->configService->method('getExtRef')->willReturn('test-ext-ref');
 		$this->configService->method('getBaseUrl')->willReturn('https://pss.example.com');
+		$this->configService->method('getUsername')->willReturn('user');
+		$this->configService->method('getPassword')->willReturn('pass');
+
+		$this->job = new UserStatsJob(
+			$this->logger,
+			$this->timeFactory,
+			$this->userManager,
+			$this->apiClientService,
+			$this->configService,
+		);
+
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('UserStatsJob: missing required PSS configuration, aborting');
+
+		$this->statsApi->expects($this->never())->method('updateStats');
+
+		$this->invokePrivate($this->job, 'run', [null]);
+	}
+
+	public function testRunLogsErrorWhenCredentialsMissing(): void {
+		$this->userManager->method('countUsersTotal')->willReturn(5);
+
+		$this->configService = $this->createMock(PssConfigService::class);
+		$this->configService->method('getBrand')->willReturn('IONOS');
+		$this->configService->method('getExtRef')->willReturn('test-ext-ref');
+		$this->configService->method('getBaseUrl')->willReturn('https://pss.example.com');
+		$this->configService->method('getUsername')->willReturn('');
+		$this->configService->method('getPassword')->willReturn('pass');
 
 		$this->job = new UserStatsJob(
 			$this->logger,

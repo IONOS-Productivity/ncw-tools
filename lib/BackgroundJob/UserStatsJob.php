@@ -40,16 +40,18 @@ class UserStatsJob extends QueuedJob {
 		$brand = $this->configService->getBrand();
 		$extRef = $this->configService->getExtRef();
 		$baseUrl = $this->configService->getBaseUrl();
+		$username = $this->configService->getUsername();
+		$password = $this->configService->getPassword();
 
-		if ($brand === '' || $extRef === '' || $baseUrl === '') {
+		if ($brand === '' || $extRef === '' || $baseUrl === '' || $username === '' || $password === '') {
 			$this->logger->error('UserStatsJob: missing required PSS configuration, aborting');
 			return;
 		}
 
-		$timestamp = $this->timeFactory->getDateTime('now', new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z');
+		$timestamp = $this->timeFactory->getDateTime('now', new \DateTimeZone('UTC'));
 
 		$payload = [
-			'timestamp' => $timestamp,
+			'timestamp' => $timestamp->format('Y-m-d\TH:i:s.v\Z'),
 			'users' => ['existingUsers' => $userTotalCount],
 		];
 		$this->logger->info('User stats payload', ['payload' => $payload]);
@@ -59,20 +61,20 @@ class UserStatsJob extends QueuedJob {
 
 		try {
 			$request = new StatsUpdateRequest();
-			$request->setTimestamp(new \DateTime($timestamp));
+			$request->setTimestamp($timestamp);
 			$request->setUsers($userStats);
 
 			$client = $this->apiClientService->newClient();
 			$api = $this->apiClientService->newStatsAPIApi(
 				$client,
 				$baseUrl,
-				$this->configService->getUsername(),
-				$this->configService->getPassword(),
+				$username,
+				$password,
 			);
 			$api->updateStats($brand, $extRef, $request);
 		} catch (\Throwable $e) {
 			$this->logger->error('UserStatsJob: failed to push stats to PSS', [
-				'exception' => $e->getMessage(),
+				'exception' => $e,
 			]);
 		}
 	}
