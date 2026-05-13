@@ -20,19 +20,14 @@
 					"url": "https://github.com/ionos-productivity/ionos-ncpss-addons-api-client.git",
 					"reference": "2.0.0-20260429080405"
 				},
-				"dist": {
-					"type": "zip",
-					"url": "https://github.com/ionos-productivity/ionos-ncpss-addons-api-client/archive/refs/tags/2.0.0-20260429080405.zip",
-					"reference": "2.0.0-20260429080405"
+				"require": {
+					"guzzlehttp/guzzle": "^7.3",
+					"guzzlehttp/psr7": "^1.7 || ^2.0"
 				},
 				"autoload": {
 					"psr-4": {
 						"IONOS\\NextcloudPSS\\AddonsAPI\\Client\\": "lib/"
 					}
-				},
-				"require": {
-					"guzzlehttp/guzzle": "^7.3",
-					"guzzlehttp/psr7": "^1.7 || ^2.0"
 				}
 			}
 		}
