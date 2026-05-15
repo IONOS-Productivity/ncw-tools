@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\NcwTools\BackgroundJob;
 
+use OCA\NcwTools\Stats\StatsReporter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\IUserManager;
@@ -18,24 +19,22 @@ class UserStatsJob extends QueuedJob {
 
 	public function __construct(
 		private LoggerInterface $logger,
-		private ITimeFactory $timeFactory,
+		ITimeFactory $timeFactory,
 		private IUserManager $userManager,
+		private StatsReporter $reporter,
 	) {
 		parent::__construct($timeFactory);
 	}
 
 	protected function run(mixed $argument): void {
-		$userTotalCount = $this->userManager->countUsersTotal();
-		if ($userTotalCount === false) {
+		$count = $this->userManager->countUsersTotal();
+		if ($count === false) {
 			$this->logger->warning('UserStatsJob: could not retrieve user count');
 			return;
 		}
-
-		$payload = [
-			'timestamp' => $this->timeFactory->getDateTime('now', new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z'),
-			'users' => ['existingUsers' => $userTotalCount],
-		];
-
-		$this->logger->info('User stats payload', ['payload' => $payload]);
+		$this->reporter->reportUserCount(
+			$count,
+			$this->time->getDateTime('now', new \DateTimeZone('UTC')),
+		);
 	}
 }

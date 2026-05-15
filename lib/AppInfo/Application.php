@@ -12,6 +12,8 @@ namespace OCA\NcwTools\AppInfo;
 use OCA\NcwTools\Capabilities;
 use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
 use OCA\NcwTools\Listeners\UserEventListener;
+use OCA\NcwTools\Stats\PssStatsReporter;
+use OCA\NcwTools\Stats\StatsReporter;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -19,6 +21,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Install\Events\InstallationCompletedEvent;
 use OCP\User\Events\UserCreatedEvent;
 use OCP\User\Events\UserDeletedEvent;
+
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'ncw_tools';
@@ -32,6 +36,7 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(UserCreatedEvent::class, UserEventListener::class);
 		$context->registerEventListener(UserDeletedEvent::class, UserEventListener::class);
 		$context->registerCapability(Capabilities::class);
+		$context->registerServiceAlias(StatsReporter::class, PssStatsReporter::class);
 	}
 
 	public function boot(IBootContext $context): void {

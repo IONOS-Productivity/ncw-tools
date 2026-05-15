@@ -34,6 +34,9 @@
 				<referencedMethod name="OCA\NcwTools\Helper\WelcomeMailHelper::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\InstallationCompletedEventListener::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\UserEventListener::__construct" />
+				<referencedMethod name="OCA\NcwTools\Stats\PssApiFactory::__construct" />
+				<referencedMethod name="OCA\NcwTools\Stats\PssConfigReader::__construct" />
+				<referencedMethod name="OCA\NcwTools\Stats\PssStatsReporter::__construct" />
 			</errorLevel>
 		</PossiblyUnusedMethod>
 	</issueHandlers>
