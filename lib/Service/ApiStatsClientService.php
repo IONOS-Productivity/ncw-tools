@@ -10,20 +10,16 @@ declare(strict_types=1);
 namespace OCA\NcwTools\Service;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\ClientInterface;
 use IONOS\NextcloudPSS\AddonsAPI\Client\Api\StatsAPIApi;
 use IONOS\NextcloudPSS\AddonsAPI\Client\Configuration;
 
 class ApiStatsClientService {
 
-	public function newClient(): Client {
-		return new Client([
+	public function newStatsAPIApi(string $baseUrl, string $username, string $password): StatsAPIApi {
+		$client = new Client([
 			'connect_timeout' => 5,
 			'timeout' => 10,
 		]);
-	}
-
-	public function newStatsAPIApi(ClientInterface $client, string $baseUrl, string $username, string $password): StatsAPIApi {
 		$config = new Configuration();
 		$config->setHost($baseUrl);
 		$config->setUsername($username);

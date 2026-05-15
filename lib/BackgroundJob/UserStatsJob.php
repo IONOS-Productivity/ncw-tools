@@ -50,27 +50,20 @@ class UserStatsJob extends QueuedJob {
 
 		$timestamp = $this->timeFactory->getDateTime('now', new \DateTimeZone('UTC'));
 
-		$payload = [
-			'timestamp' => $timestamp->format('Y-m-d\TH:i:s.v\Z'),
-			'users' => ['existingUsers' => $userTotalCount],
-		];
-		$this->logger->info('User stats payload', ['payload' => $payload]);
-
 		$userStats = new UserStats();
 		$userStats->setExistingUsers($userTotalCount);
 
-		try {
-			$request = new StatsUpdateRequest();
-			$request->setTimestamp($timestamp);
-			$request->setUsers($userStats);
+		$request = new StatsUpdateRequest();
+		$request->setTimestamp($timestamp);
+		$request->setUsers($userStats);
 
-			$client = $this->apiClientService->newClient();
-			$api = $this->apiClientService->newStatsAPIApi(
-				$client,
-				$baseUrl,
-				$username,
-				$password,
-			);
+		$this->logger->info('UserStatsJob: pushing user stats', [
+			'existingUsers' => $userTotalCount,
+			'timestamp' => $timestamp->format('Y-m-d\TH:i:s.v\Z'),
+		]);
+
+		try {
+			$api = $this->apiClientService->newStatsAPIApi($baseUrl, $username, $password);
 			$api->updateStats($brand, $extRef, $request);
 		} catch (\Throwable $e) {
 			$this->logger->error('UserStatsJob: failed to push stats to PSS', [
