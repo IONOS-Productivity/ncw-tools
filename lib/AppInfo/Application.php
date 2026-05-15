@@ -9,8 +9,6 @@ declare(strict_types=1);
 
 namespace OCA\NcwTools\AppInfo;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
-
 use OCA\NcwTools\Capabilities;
 use OCA\NcwTools\Listeners\InstallationCompletedEventListener;
 use OCA\NcwTools\Listeners\UserEventListener;
@@ -21,6 +19,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Install\Events\InstallationCompletedEvent;
 use OCP\User\Events\UserCreatedEvent;
 use OCP\User\Events\UserDeletedEvent;
+
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 class Application extends App implements IBootstrap {
 	public const APP_ID = 'ncw_tools';
