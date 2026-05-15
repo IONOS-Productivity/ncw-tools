@@ -41,7 +41,9 @@ SPDX-License-Identifier = "AGPL-3.0-or-later"
 path = [
     "README.md",
     "CHANGELOG.md",
-    "CODE_OF_CONDUCT.md"
+    "CODE_OF_CONDUCT.md",
+    "docs/README.md",
+    "docs/events/post-setup.md"
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 STRATO GmbH"
