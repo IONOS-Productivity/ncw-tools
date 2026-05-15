@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "aff3ddb2be52e4825714064f03c35ceb",
+    "content-hash": "7ac7adafbdcb64d2d37d9c9e42108378",
     "packages": [
         {
             "name": "bamarni/composer-bin-plugin",
@@ -395,7 +395,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ionos-productivity/ionos-ncpss-addons-api-client.git",
-                "reference": "2.0.0-20260429080405"
+                "reference": "a5f09eacaa3139e50e43ced4a44137946a8bfe18"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://github.com/ionos-productivity/ionos-ncpss-addons-api-client/archive/refs/tags/2.0.0-20260429080405.zip",
+                "reference": "a5f09eacaa3139e50e43ced4a44137946a8bfe18"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.3",

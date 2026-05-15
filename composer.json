@@ -18,7 +18,12 @@
 				"source": {
 					"type": "git",
 					"url": "https://github.com/ionos-productivity/ionos-ncpss-addons-api-client.git",
-					"reference": "2.0.0-20260429080405"
+					"reference": "a5f09eacaa3139e50e43ced4a44137946a8bfe18"
+				},
+				"dist": {
+					"type": "zip",
+					"url": "https://github.com/ionos-productivity/ionos-ncpss-addons-api-client/archive/refs/tags/2.0.0-20260429080405.zip",
+					"reference": "a5f09eacaa3139e50e43ced4a44137946a8bfe18"
 				},
 				"require": {
 					"guzzlehttp/guzzle": "^7.3",
