@@ -36,6 +36,8 @@
 		<UnusedClass>
 			<errorLevel type="suppress">
 				<referencedClass name="OCA\NcwTools\AppInfo\Application" />
+				<!-- Registered through appinfo/info.xml, which psalm does not read -->
+				<referencedClass name="OCA\NcwTools\Command\SecuritySelfTest" />
 			</errorLevel>
 		</UnusedClass>
 		<PossiblyUnusedMethod>
@@ -43,9 +45,11 @@
 				<referencedMethod name="OCA\NcwTools\AppInfo\Application::__construct" />
 				<referencedMethod name="OCA\NcwTools\BackgroundJob\PostSetupJob::__construct" />
 				<referencedMethod name="OCA\NcwTools\BackgroundJob\UserStatsJob::__construct" />
+				<referencedMethod name="OCA\NcwTools\Command\SecuritySelfTest::__construct" />
 				<referencedMethod name="OCA\NcwTools\Helper\WelcomeMailHelper::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\InstallationCompletedEventListener::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\UserEventListener::__construct" />
+				<referencedMethod name="OCA\NcwTools\Security\SecuritySelfTest::__construct" />
 				<referencedMethod name="OCA\NcwTools\Stats\PssApiFactory::__construct" />
 				<referencedMethod name="OCA\NcwTools\Stats\PssConfigReader::__construct" />
 				<referencedMethod name="OCA\NcwTools\Stats\PssStatsReporter::__construct" />
