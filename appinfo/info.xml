@@ -14,4 +14,7 @@
 	<dependencies>
 		<nextcloud min-version="31" max-version="33"/>
 	</dependencies>
+	<commands>
+		<command>OCA\NcwTools\Command\SecuritySelfTest</command>
+	</commands>
 </info>
