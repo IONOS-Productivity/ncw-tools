@@ -97,7 +97,7 @@ class SecuritySelfTestIntegrationTest extends TestCase {
 		$this->assertSame(HashAlgorithm::ARGON2ID, $report['password_hashing']['configured_algorithm']);
 		$this->assertSame(
 			['memory_cost', 'time_cost', 'threads'],
-			array_keys($report['security_config']['parameters']),
+			array_keys(get_object_vars($report['security_config']['parameters'])),
 		);
 	}
 

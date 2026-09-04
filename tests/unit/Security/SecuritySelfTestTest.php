@@ -106,9 +106,11 @@ class SecuritySelfTestTest extends TestCase {
 			['key', 'expected', 'actual', 'result'],
 			array_keys($report['security_config']['checks'][0]),
 		);
+		// An object, not an array: an empty map must not encode as `[]`.
+		$this->assertInstanceOf(\stdClass::class, $report['security_config']['parameters']);
 		$this->assertSame(
 			['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 1],
-			$report['security_config']['parameters'],
+			get_object_vars($report['security_config']['parameters']),
 		);
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $report['timestamp']);
 	}
@@ -189,7 +191,7 @@ class SecuritySelfTestTest extends TestCase {
 		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['result']);
 		// The hardening checks are independent of the hasher probe.
 		$this->assertSame(SecuritySelfTest::RESULT_PASS, $report['security_config']['result']);
-		$this->assertSame(['cost' => 10], $report['security_config']['parameters']);
+		$this->assertSame(['cost' => 10], get_object_vars($report['security_config']['parameters']));
 	}
 
 	public function testFailWhenConfiguredAlgorithmIsArgon2i(): void {

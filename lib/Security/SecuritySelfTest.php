@@ -93,7 +93,7 @@ class SecuritySelfTest {
 	 *     security_config: array{
 	 *         result: self::RESULT_PASS|self::RESULT_FAIL,
 	 *         checks: list<array{key: string, expected: bool|string, actual: bool|string, result: string}>,
-	 *         parameters: array<string, int>
+	 *         parameters: \stdClass
 	 *     }
 	 * }
 	 */
@@ -278,7 +278,7 @@ class SecuritySelfTest {
 	 * @return array{
 	 *     result: self::RESULT_PASS|self::RESULT_FAIL,
 	 *     checks: list<array{key: string, expected: bool|string, actual: bool|string, result: string}>,
-	 *     parameters: array<string, int>
+	 *     parameters: \stdClass
 	 * }
 	 */
 	private function checkSecurityConfig(string $probeHash): array {
@@ -301,11 +301,23 @@ class SecuritySelfTest {
 			}
 		}
 
+		// Evidence, not an assertion: the cost parameters new hashes get.
+		//
+		// Cast to an object because an empty PHP array encodes as `[]`, not
+		// `{}`, and this field is a map: a consumer reading
+		// .security_config.parameters.memory_cost with jq errors out on an
+		// array instead of getting null. The cast belongs here rather than at
+		// an encode boundary because both evidence channels encode the
+		// artifact -- stdout and the logger context that reaches Kibana -- and
+		// fixing only one is the mistake the environment-label sanitising
+		// already had to correct.
+		/** @var \stdClass $parameters a map of cost name to value, possibly empty */
+		$parameters = (object)HashAlgorithm::parametersFromStoredHash($probeHash);
+
 		return [
 			'result' => $this->verdict($passed),
 			'checks' => $checks,
-			// Evidence, not an assertion: the cost parameters new hashes get.
-			'parameters' => HashAlgorithm::parametersFromStoredHash($probeHash),
+			'parameters' => $parameters,
 		];
 	}
 

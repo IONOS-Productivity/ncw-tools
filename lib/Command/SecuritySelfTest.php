@@ -131,7 +131,7 @@ class SecuritySelfTest extends Base {
 	 *     security_config: array{
 	 *         result: string,
 	 *         checks: list<array{key: string, expected: bool|string, actual: bool|string, result: string}>,
-	 *         parameters: array<string, int>
+	 *         parameters: \stdClass
 	 *     }
 	 * } $report
 	 */
@@ -167,7 +167,11 @@ class SecuritySelfTest extends Base {
 			));
 		}
 		$output->writeln('  parameters:');
-		foreach ($security['parameters'] as $name => $value) {
+		// A map cast to an object by the service, so it cannot degrade into a
+		// JSON array when empty.
+		/** @var array<string, int> $parameters */
+		$parameters = get_object_vars($security['parameters']);
+		foreach ($parameters as $name => $value) {
 			$output->writeln('    ' . $name . ': ' . $value);
 		}
 	}
