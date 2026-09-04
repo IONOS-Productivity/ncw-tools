@@ -18,6 +18,8 @@ use OCP\IDBConnection;
 use OCP\IUserManager;
 use OCP\Server;
 use OCP\User\Events\UserCreatedEvent;
+use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Validator;
 use Test\TestCase;
 
 /**
@@ -89,6 +91,33 @@ class SecuritySelfTestIntegrationTest extends TestCase {
 		$report = $this->selfTest->run(false, 1);
 
 		$this->assertSame(1, array_sum($report['password_hashing']['stored_distribution']));
+	}
+
+	public function testTheArtifactThisInstanceProducesMatchesThePublishedSchema(): void {
+		// The unit suite validates mocked shapes; this validates what a real
+		// instance actually emits, through the real hasher, config and database.
+		$schema = json_decode(
+			(string)file_get_contents(__DIR__ . '/../../docs/security-selftest.schema.json'),
+			false,
+			512,
+			JSON_THROW_ON_ERROR,
+		);
+		$artifact = json_decode(
+			(string)json_encode($this->selfTest->run(true), JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR),
+			false,
+			512,
+			JSON_THROW_ON_ERROR,
+		);
+
+		$result = (new Validator())->validate($artifact, $schema);
+
+		$this->assertTrue(
+			$result->isValid(),
+			$result->hasError()
+				? 'Artifact does not match docs/security-selftest.schema.json: '
+					. (string)json_encode((new ErrorFormatter())->format($result->error()), JSON_PRETTY_PRINT)
+				: '',
+		);
 	}
 
 	public function testConfiguredAlgorithmIsArgon2idOnThisInstance(): void {

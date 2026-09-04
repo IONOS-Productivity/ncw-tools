@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ionos:ncw-tools:security-selftest-artifact:3",
+  "title": "NCW security self-test evidence artifact",
+  "description": "The artifact written by `occ ncw_tools:security:selftest --output=json`, and logged as the structured context of the `ncw_tools security selftest` line. It is the C5 PSS-07 evidence that this instance hashes passwords with argon2id. The shape is a cross-repo contract: nc-manager/bin/send-report.sh reads it with jq and forwards it to the report endpoint, so a change to it needs a schema_version bump. No field ever carries hash material, a salt or a secret value - only algorithm names, counts, booleans and cost parameters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "timestamp",
+    "result",
+    "instance",
+    "password_hashing",
+    "security_config"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "3",
+      "$comment": "A string, not a number. Bump on any change to this schema."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "description": "Collection time, always UTC with a literal Z, from gmdate('Y-m-d\\TH:i:s\\Z')."
+    },
+    "result": {
+      "$ref": "#/$defs/verdict",
+      "description": "PASS only when both password_hashing.result and security_config.result are PASS."
+    },
+    "instance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "url", "name", "namespace", "environment"],
+      "description": "Self-describing instance identity. Every field may be an empty string: id and url come from IConfig and name/namespace/environment from the deployment's environment variables, which the chart only sets for the self-test Job.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "instanceid from IConfig."
+        },
+        "url": {
+          "type": "string",
+          "description": "overwrite.cli.url from IConfig; the downstream fallback identifier."
+        },
+        "name": {
+          "type": "string",
+          "description": "INSTANCE_NAME. Arbitrary bytes from the environment, substituted to valid UTF-8 by the producer."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "NAMESPACE, set by the chart from the downward API."
+        },
+        "environment": {
+          "type": "string",
+          "description": "ENVIRONMENT, e.g. production, staging, development."
+        }
+      }
+    },
+    "password_hashing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "configured_algorithm", "round_trip", "stored_distribution"],
+      "properties": {
+        "result": { "$ref": "#/$defs/verdict" },
+        "configured_algorithm": {
+          "$ref": "#/$defs/algorithm",
+          "description": "The algorithm a *new* password gets, from hashing a random probe through IHasher and classifying the result. Must be argon2id to pass."
+        },
+        "round_trip": { "$ref": "#/$defs/roundTrip" },
+        "stored_distribution": {
+          "type": "object",
+          "required": ["argon2id", "bcrypt", "empty", "unknown"],
+          "propertyNames": { "$ref": "#/$defs/algorithm" },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Row counts per algorithm over the surveyed rows of the users table. The four required buckets are always present; argon2i, legacy-bcrypt and legacy-sha1 appear only when rows of that kind are actually observed, so their presence is itself the finding. Read named keys or sum to_entries - do not assume a fixed key set."
+        }
+      },
+      "allOf": [
+        {
+          "$comment": "A passing hashing section pins what it means: argon2id configured, no round-trip failure, and not one surveyed row outside the tolerated argon2id/empty buckets.",
+          "if": {
+            "required": ["result"],
+            "properties": { "result": { "const": "PASS" } }
+          },
+          "then": {
+            "properties": {
+              "configured_algorithm": { "const": "argon2id" },
+              "round_trip": {
+                "properties": { "result": { "enum": ["PASS", "SKIPPED"] } }
+              },
+              "stored_distribution": {
+                "properties": {
+                  "bcrypt": { "const": 0 },
+                  "unknown": { "const": 0 },
+                  "argon2i": { "const": 0 },
+                  "legacy-bcrypt": { "const": 0 },
+                  "legacy-sha1": { "const": 0 }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "security_config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "checks", "parameters"],
+      "properties": {
+        "result": { "$ref": "#/$defs/verdict" },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "description": "One entry per asserted config value, read through IConfig so the effective merged configuration is asserted rather than a single file. The list is extensible: consumers must match on key rather than on position or length.",
+          "$comment": "Currently: hashing_default_password, auth.bruteforce.protection.enabled, ratelimit.protection.enabled, overwriteprotocol, passwordsalt_present, secret_present.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "expected", "actual", "result"],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The config key, or <key>_present where only the presence of a secret may be reported."
+              },
+              "expected": { "$ref": "#/$defs/checkValue" },
+              "actual": { "$ref": "#/$defs/checkValue" },
+              "result": { "$ref": "#/$defs/verdict" }
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "propertyNames": { "enum": ["memory_cost", "time_cost", "threads", "cost"] },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "Evidence, not an assertion: the cost parameters the probe hash was actually produced with, as reported by password_get_info(). memory_cost/time_cost/threads for argon2, cost for bcrypt. These are the effective values, which is stronger evidence than the hashing* config keys because the hasher clamps those to the algorithm minimums. An empty object when the parameters cannot be read - notably for an argon2 hash on a PHP build without argon2 support, where only the registered handler could read the cost fields.",
+          "$comment": "Always a JSON object, never []. The producer casts the map so an empty one cannot degrade into an array on either evidence channel."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "A top-level PASS cannot be claimed while either section fails.",
+      "if": {
+        "required": ["result"],
+        "properties": { "result": { "const": "PASS" } }
+      },
+      "then": {
+        "properties": {
+          "password_hashing": {
+            "properties": { "result": { "const": "PASS" } }
+          },
+          "security_config": {
+            "properties": { "result": { "const": "PASS" } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "verdict": {
+      "enum": ["PASS", "FAIL"],
+      "description": "A section or overall verdict. SKIPPED is only ever a round_trip result."
+    },
+    "algorithm": {
+      "enum": [
+        "argon2id",
+        "argon2i",
+        "bcrypt",
+        "legacy-bcrypt",
+        "legacy-sha1",
+        "empty",
+        "unknown"
+      ],
+      "description": "The classes OCA\\NcwTools\\Security\\HashAlgorithm reports. bcrypt/argon2i carry a hasher version prefix; the legacy-* forms are unprefixed; empty means no local password (an SSO-only account); unknown means the value matched no known algorithm marker."
+    },
+    "checkValue": {
+      "type": ["boolean", "string"],
+      "description": "Config assertions are booleans or strings only. A secret is reported as a boolean under <key>_present - never as its value."
+    },
+    "roundTrip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "stored_algorithm", "cleaned_up"],
+      "description": "The optional live proof: a disposable ncw-selftest-<random> user is created through IUserManager, its stored hash read back, and the user deleted again. SKIPPED unless --round-trip is given, and a skipped round trip never affects any result.",
+      "properties": {
+        "result": {
+          "enum": ["PASS", "FAIL", "SKIPPED"]
+        },
+        "stored_algorithm": {
+          "description": "The algorithm classified from the row the probe user actually wrote; null when the probe could not be created, and always null when SKIPPED.",
+          "oneOf": [{ "$ref": "#/$defs/algorithm" }, { "type": "null" }]
+        },
+        "cleaned_up": {
+          "type": ["boolean", "null"],
+          "description": "Re-checked after deletion by resolving the uid again. null only when SKIPPED."
+        }
+      },
+      "allOf": [
+        {
+          "$comment": "A skipped round trip reports nothing at all.",
+          "if": {
+            "required": ["result"],
+            "properties": { "result": { "const": "SKIPPED" } }
+          },
+          "then": {
+            "properties": {
+              "stored_algorithm": { "type": "null" },
+              "cleaned_up": { "type": "null" }
+            }
+          }
+        },
+        {
+          "$comment": "A round trip that ran always knows whether it cleaned up after itself.",
+          "if": {
+            "required": ["result"],
+            "properties": { "result": { "enum": ["PASS", "FAIL"] } }
+          },
+          "then": {
+            "properties": { "cleaned_up": { "type": "boolean" } }
+          }
+        },
+        {
+          "$comment": "PASS is only reachable with argon2id stored and the probe user gone.",
+          "if": {
+            "required": ["result"],
+            "properties": { "result": { "const": "PASS" } }
+          },
+          "then": {
+            "properties": {
+              "stored_algorithm": { "const": "argon2id" },
+              "cleaned_up": { "const": true }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -36,6 +36,10 @@ Classifying by marker rather than by `password_get_info()` is deliberate. PHP re
 
 ## The evidence artifact
 
+The shape is a cross-repo contract — `nc-manager/bin/send-report.sh` reads it with `jq` — so it is published as a JSON Schema next to this page: [`security-selftest.schema.json`](security-selftest.schema.json) (draft 2020-12). Both test suites validate real artifacts against it, so the schema cannot drift from the producer, and a consumer can validate an artifact it receives with any standard tool. Changing the shape means bumping `schema_version`.
+
+Beyond field types, the schema encodes the verdict invariants: a top-level `PASS` requires both sections to pass, a passing `password_hashing` requires `argon2id` and no surveyed row outside the tolerated buckets, and a `round_trip` that is `SKIPPED` must report nothing while one that passed must show `argon2id` and `cleaned_up: true`.
+
 ```json
 {
   "schema_version": "3",
@@ -74,7 +78,7 @@ Classifying by marker rather than by `password_get_info()` is deliberate. PHP re
 | `password_hashing.round_trip` | See below. `SKIPPED` unless `--round-trip` is given, and a skipped round trip never affects the result. |
 | `password_hashing.stored_distribution` | Row counts per algorithm over the surveyed rows of the `users` table. |
 | `security_config.checks` | One entry per asserted config value: `key`, `expected`, `actual`, `result`. |
-| `security_config.parameters` | Evidence, not an assertion: the cost parameters the probe hash was actually produced with, as reported by `password_get_info()`. `memory_cost`/`time_cost`/`threads` for argon2, `cost` for bcrypt. These are the *effective* values — stronger evidence than the `hashing*` config keys, which the hasher clamps to the algorithm minimums. Empty for an argon2 hash on a build without argon2 support, since only the registered handler can read the cost fields. |
+| `security_config.parameters` | Evidence, not an assertion: the cost parameters the probe hash was actually produced with, as reported by `password_get_info()`. `memory_cost`/`time_cost`/`threads` for argon2, `cost` for bcrypt. These are the *effective* values — stronger evidence than the `hashing*` config keys, which the hasher clamps to the algorithm minimums. Always a JSON object, empty (`{}`) when the parameters cannot be read — notably for an argon2 hash on a build without argon2 support, since only the registered handler can read the cost fields. |
 
 ### `stored_distribution`
 

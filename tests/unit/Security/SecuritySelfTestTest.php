@@ -20,6 +20,8 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
+use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
@@ -28,6 +30,9 @@ use Test\TestCase;
 class SecuritySelfTestTest extends TestCase {
 	private const PASSWORD_SALT = 'a-very-secret-password-salt';
 	private const SECRET = 'a-very-secret-secret';
+
+	/** The published contract other repos parse the artifact against. */
+	private const ARTIFACT_SCHEMA = __DIR__ . '/../../../docs/security-selftest.schema.json';
 
 	private IHasher&MockObject $hasher;
 	private IDBConnection&MockObject $db;
@@ -532,6 +537,99 @@ class SecuritySelfTestTest extends TestCase {
 
 		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['password_hashing']['round_trip']['result']);
 		$this->assertNull($report['password_hashing']['round_trip']['stored_algorithm']);
+	}
+
+	public function testThePublishedSchemaTracksTheProducersSchemaVersion(): void {
+		$schema = json_decode((string)file_get_contents(self::ARTIFACT_SCHEMA), true, 512, JSON_THROW_ON_ERROR);
+
+		$this->assertIsArray($schema);
+		$this->assertSame(
+			SecuritySelfTest::SCHEMA_VERSION,
+			$schema['properties']['schema_version']['const'],
+			'The schema pins a schema_version the producer no longer emits',
+		);
+	}
+
+	public function testAPassingArtifactMatchesThePublishedSchema(): void {
+		$this->stubHasher(self::argon2id());
+		$this->stubConfig();
+		$this->stubDatabase([self::argon2id()]);
+
+		$report = $this->selfTest()->run();
+
+		$this->assertSame(SecuritySelfTest::RESULT_PASS, $report['result']);
+		$this->assertMatchesArtifactSchema($report);
+	}
+
+	public function testAFailingArtifactMatchesThePublishedSchema(): void {
+		// Both halves failing at once: a downgraded hasher and plain http.
+		$this->stubHasher(self::bcrypt());
+		$this->stubConfig(['overwriteprotocol' => 'http']);
+		$this->stubDatabase([self::argon2id(), self::legacySha1(), '']);
+
+		$report = $this->selfTest()->run();
+
+		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['result']);
+		$this->assertMatchesArtifactSchema($report);
+	}
+
+	public function testARoundTripArtifactMatchesThePublishedSchema(): void {
+		$this->stubHasher(self::argon2id());
+		$this->stubConfig();
+		$this->stubDatabase([self::argon2id()], self::argon2id());
+
+		$user = $this->createMock(IUser::class);
+		$user->method('delete')->willReturn(true);
+		$this->userManager->method('createUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn(null);
+
+		$report = $this->selfTest()->run(true);
+
+		$this->assertSame(SecuritySelfTest::RESULT_PASS, $report['password_hashing']['round_trip']['result']);
+		$this->assertMatchesArtifactSchema($report);
+	}
+
+	public function testAnArtifactWithoutCostParametersKeepsParametersAnObject(): void {
+		// A probe hash password_get_info() cannot read cost fields from, which
+		// is what a PHP build without argon2 support would produce for an
+		// argon2 hash. The empty map must not degrade into a JSON array.
+		$this->stubHasher(self::legacySha1());
+		$this->stubConfig();
+		$this->stubDatabase([self::argon2id()]);
+
+		$report = $this->selfTest()->run();
+
+		$this->assertEquals(new \stdClass(), $report['security_config']['parameters']);
+		$this->assertStringContainsString('"parameters":{}', $this->encodeArtifact($report));
+		$this->assertMatchesArtifactSchema($report);
+	}
+
+	/**
+	 * Encodes the artifact exactly as the command does, so what is validated is
+	 * what a consumer actually receives on stdout and in the Kibana context.
+	 *
+	 * @param array<string, mixed> $report
+	 */
+	private function encodeArtifact(array $report): string {
+		return (string)json_encode($report, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
+	}
+
+	/**
+	 * @param array<string, mixed> $report
+	 */
+	private function assertMatchesArtifactSchema(array $report): void {
+		$schema = json_decode((string)file_get_contents(self::ARTIFACT_SCHEMA), false, 512, JSON_THROW_ON_ERROR);
+		$artifact = json_decode($this->encodeArtifact($report), false, 512, JSON_THROW_ON_ERROR);
+
+		$result = (new Validator())->validate($artifact, $schema);
+
+		$this->assertTrue(
+			$result->isValid(),
+			$result->hasError()
+				? 'Artifact does not match docs/security-selftest.schema.json: '
+					. (string)json_encode((new ErrorFormatter())->format($result->error()), JSON_PRETTY_PRINT)
+				: '',
+		);
 	}
 
 	private function selfTest(): SecuritySelfTest {
