@@ -13,6 +13,7 @@ use OC\Core\Command\Base;
 use OCA\NcwTools\AppInfo\Application;
 use OCA\NcwTools\Security\SecuritySelfTest as SecuritySelfTestService;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -22,15 +23,27 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Verifies that password hashing is argon2id and emits a structured evidence
  * artifact for C5 control PSS-07.
  *
- * Exit codes: 0 = PASS, 1 = FAIL, 2 = usage error.
+ * Exit codes: 0 = PASS, 1 = FAIL, 2 = usage error, 3 = internal error.
  *
  * stdout carries nothing but the artifact, because the deployment wrapper pipes
  * it straight into `jq`. Diagnostics go to stderr, the evidence itself also goes
- * to the log. A FAIL still writes the complete artifact before exiting 1; a
- * usage error writes no artifact at all.
+ * to the log. A FAIL still writes the complete artifact before exiting 1, so an
+ * exit 1 always carries one; a usage error and an internal error write no
+ * artifact at all.
+ *
+ * An internal error is deliberately not reported as a FAIL: a FAIL is a verdict
+ * about the instance, and a self-test that could not run has not reached one.
+ * Exit 3 lets the wrapper tell an unreachable database from a real finding
+ * instead of forwarding invented evidence.
  */
 class SecuritySelfTest extends Base {
 	private const LOG_MESSAGE = 'ncw_tools security selftest';
+
+	/**
+	 * The self-test itself broke down, so there is no verdict and no artifact.
+	 * Distinct from 1 (FAIL), which always carries the complete artifact.
+	 */
+	private const EXIT_INTERNAL_ERROR = 3;
 
 	private const OUTPUT_FORMATS = [
 		self::OUTPUT_FORMAT_PLAIN,
@@ -80,7 +93,25 @@ class SecuritySelfTest extends Base {
 			return 2;
 		}
 
-		$report = $this->selfTest->run($input->getOption('round-trip') === true, $sampleSize);
+		try {
+			$report = $this->selfTest->run($input->getOption('round-trip') === true, $sampleSize);
+		} catch (\Throwable $e) {
+			// Without this the throwable would reach Symfony, which exits with
+			// $e->getCode() clamped to 255 -- not 1 -- and leaves stdout empty
+			// and the log without a line, so the failure is invisible to both
+			// the wrapper and Kibana.
+			//
+			// Message only, never the exception: the round-trip probe password
+			// can appear in stack-trace arguments.
+			$this->logger->error(self::LOG_MESSAGE . ': could not collect the evidence artifact', [
+				'exceptionClass' => $e::class,
+				'exceptionMessage' => $e->getMessage(),
+			]);
+			$errors->writeln('<error>Could not collect the evidence artifact: '
+				. OutputFormatter::escape($e->getMessage()) . '</error>');
+
+			return self::EXIT_INTERNAL_ERROR;
+		}
 
 		// The structured context is what reaches Kibana; the deployment sets
 		// log_type=errorlog, so the context is serialised alongside the message.
@@ -98,8 +129,11 @@ class SecuritySelfTest extends Base {
 				| ($format === self::OUTPUT_FORMAT_JSON_PRETTY ? JSON_PRETTY_PRINT : 0);
 			$json = json_encode($report, $flags);
 			if ($json === false) {
+				// Not a FAIL: the artifact was collected, only writing it out
+				// failed, and exiting 1 here would break the promise that an
+				// exit 1 carries the complete artifact.
 				$errors->writeln('<error>Could not encode the evidence artifact: ' . json_last_error_msg() . '</error>');
-				return 1;
+				return self::EXIT_INTERNAL_ERROR;
 			}
 			$output->writeln($json);
 		}

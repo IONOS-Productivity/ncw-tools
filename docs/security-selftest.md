@@ -19,8 +19,11 @@ occ ncw_tools:security:selftest [--round-trip] [--sample-size=N] [--output=plain
 | `0` | PASS — every executed check passed. |
 | `1` | FAIL — at least one executed check failed. The complete artifact is still written to stdout. |
 | `2` | Usage error (unknown `--output` format, invalid `--sample-size`). No artifact is written. |
+| `3` | Internal error — the self-test could not run, or its artifact could not be encoded. A diagnostic goes to stderr and to the log. No artifact is written. |
 
-**stdout carries nothing but the artifact.** Diagnostics, warnings and the log line go to stderr, so `occ ncw_tools:security:selftest --output=json | jq` is safe. On a FAIL the artifact is written in full *before* the non-zero exit — the failure case is precisely what the evidence needs to capture.
+**stdout carries nothing but the artifact.** Diagnostics, warnings and the log line go to stderr, so `occ ncw_tools:security:selftest --output=json | jq` is safe. On a FAIL the artifact is written in full *before* the non-zero exit — the failure case is precisely what the evidence needs to capture. An exit `1` therefore always carries a complete artifact.
+
+**An internal error is not a FAIL.** A FAIL is a verdict about the instance; a self-test whose database went away mid-survey has not reached one. Rather than forward an artifact whose fields it never observed, the command exits `3` and writes nothing to stdout, so the wrapper can distinguish an infrastructure failure from a control failure instead of reporting invented evidence.
 
 ## Why a stored hash is not simply matched against `$argon2id$`
 
@@ -188,11 +191,19 @@ sequenceDiagram
 
         SVC->>CFG: hardening switches + secret presence
         SVC->>HA: parametersFromStoredHash(probe hash)
-        SVC-->>CMD: evidence artifact
 
-        CMD->>LOG: info("ncw_tools security selftest", artifact)
-        CMD-->>OCC: artifact on stdout
-        CMD-->>OCC: exit 0 on PASS, 1 on FAIL
+        alt the self-test threw
+            SVC-->>CMD: throwable
+            CMD->>LOG: error("… could not collect the evidence artifact")
+            Note over CMD: nothing on stdout
+            CMD-->>OCC: stderr diagnostic, exit 3
+        else artifact collected
+            SVC-->>CMD: evidence artifact
+
+            CMD->>LOG: info("ncw_tools security selftest", artifact)
+            CMD-->>OCC: artifact on stdout
+            CMD-->>OCC: exit 0 on PASS, 1 on FAIL
+        end
     end
 ```
 
@@ -207,3 +218,4 @@ sequenceDiagram
 | `round_trip.cleaned_up` is `false` | A probe account was left behind. Delete `ncw-selftest-*` manually and investigate the logged error. |
 | `round_trip.result` is `FAIL` with `stored_algorithm: null` | The probe user could not be created — most likely `password_policy` rejected the generated password. See the logged error. |
 | Exit 2 with no artifact | Wrong invocation, not a control failure. |
+| Exit 3 with no artifact | The self-test itself could not run — an unreachable database, or a hasher that threw. Not a control verdict, so it must not be reported as a FAIL. Look for the `ncw_tools security selftest: could not collect the evidence artifact` error line, which carries the exception class and message. |
