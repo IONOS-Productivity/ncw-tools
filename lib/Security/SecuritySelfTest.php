@@ -226,10 +226,15 @@ class SecuritySelfTest {
 		} catch (\Throwable $e) {
 			// Message only, never the exception: deep frames can carry the
 			// throwaway password in their stack-trace arguments.
+			//
+			// The key is `exceptionMessage` rather than `message` because
+			// OC\Log::interpolateMessage() array_merges the log line's own text
+			// over a `message` key in the context and then hoists it out of
+			// `data` -- a `message` here never reaches the log at all.
 			$this->logger->error('SecuritySelfTest: round-trip probe failed', [
 				'uid' => $uid,
 				'exceptionClass' => $e::class,
-				'message' => $e->getMessage(),
+				'exceptionMessage' => $e->getMessage(),
 			]);
 		} finally {
 			if ($user !== null && $user !== false) {
@@ -239,7 +244,7 @@ class SecuritySelfTest {
 					$this->logger->error('SecuritySelfTest: could not delete the round-trip probe user', [
 						'uid' => $uid,
 						'exceptionClass' => $e::class,
-						'message' => $e->getMessage(),
+						'exceptionMessage' => $e->getMessage(),
 					]);
 				}
 			}

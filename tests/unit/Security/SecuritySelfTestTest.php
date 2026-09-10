@@ -507,7 +507,7 @@ class SecuritySelfTestTest extends TestCase {
 			->with(
 				'SecuritySelfTest: round-trip probe failed',
 				$this->callback(fn (array $context): bool => $context['exceptionClass'] === \InvalidArgumentException::class
-					&& $context['message'] === 'Password is among the most common ones'
+					&& $context['exceptionMessage'] === 'Password is among the most common ones'
 					&& !array_key_exists('exception', $context)),
 			);
 
