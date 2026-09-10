@@ -41,11 +41,11 @@ Classifying by marker rather than by `password_get_info()` is deliberate. PHP re
 
 The shape is a cross-repo contract — `nc-manager/bin/send-report.sh` reads it with `jq` — so it is published as a JSON Schema next to this page: [`security-selftest.schema.json`](security-selftest.schema.json) (draft 2020-12). Both test suites validate real artifacts against it, so the schema cannot drift from the producer, and a consumer can validate an artifact it receives with any standard tool. Changing the shape means bumping `schema_version`.
 
-Beyond field types, the schema encodes the verdict invariants: a top-level `PASS` requires both sections to pass, a passing `password_hashing` requires `argon2id` and no surveyed row outside the tolerated buckets, and a `round_trip` that is `SKIPPED` must report nothing while one that passed must show `argon2id` and `cleaned_up: true`.
+Beyond field types, the schema encodes the verdict invariants: a top-level `PASS` requires both sections to pass, a passing `password_hashing` requires `argon2id` and no surveyed row outside the tolerated buckets, a `round_trip` that is `SKIPPED` must report nothing while one that passed must show `argon2id` and `cleaned_up: true`, and a `cleaned_up: null` — nothing was created — forces `stored_algorithm: null`, because nothing can have been read back from a probe user that never existed.
 
 ```json
 {
-  "schema_version": "3",
+  "schema_version": "4",
   "timestamp": "2026-09-01T12:00:00Z",
   "result": "PASS",
   "instance": { "id": "ocb0ycrd5a7h", "url": "https://cloud.example.com", "name": "", "namespace": "", "environment": "" },
@@ -71,7 +71,7 @@ Beyond field types, the schema encodes the verdict invariants: a top-level `PASS
 
 | Field | Meaning |
 | --- | --- |
-| `schema_version` | Artifact schema version. Currently `"3"` (a string). |
+| `schema_version` | Artifact schema version. Currently `"4"` (a string). |
 | `timestamp` | Collection time, UTC, `YYYY-MM-DDTHH:MM:SSZ`. |
 | `result` | `PASS` only when both `password_hashing.result` and `security_config.result` are `PASS`. |
 | `instance.id` | `instanceid` from `IConfig`. |
@@ -94,10 +94,12 @@ The survey passes when every counted row is `argon2id` or `empty`. Rows with no 
 | Field | Meaning |
 | --- | --- |
 | `result` | `SKIPPED` without `--round-trip`. Otherwise `PASS` when `stored_algorithm` is `argon2id` **and** `cleaned_up` is `true`. |
-| `stored_algorithm` | The algorithm classified from the row the probe user actually wrote, or `null` when the probe could not be created. |
-| `cleaned_up` | Re-checked after deletion by resolving the uid again; `true` means the probe user is gone. |
+| `stored_algorithm` | The algorithm classified from the row the probe user actually wrote, or `null` when the probe could not be created — or when it was created but its row could not be read back. |
+| `cleaned_up` | Re-checked after deletion by resolving the uid again. `true` means no probe user remains, `false` means one was left behind, and `null` means there was nothing to clean up because the probe was never created. |
 
 The probe user is created as `ncw-selftest-<random>` with a password assembled from all four character classes (so the always-enabled `password_policy` app accepts it) and **never** gets an email address, so it cannot receive mail or a password reset link. Deletion happens in a `finally`, and a probe user that survives is both logged at error level and reported as a failure. The reason a round trip failed is never in the artifact (the schema is fixed) — look for the `SecuritySelfTest: round-trip …` error lines in the log.
+
+**Why `cleaned_up` is not simply a boolean.** `true` is a claim that a probe user was created and is now gone, so reporting it for a probe that never existed would attest a create-and-delete that never happened. `null` says instead that there was nothing to clean up. The uid is nevertheless resolved in every case, including when `createUser()` never handed back a user object: it can insert the row and then throw from a post-creation hook, leaving an orphan the `finally` has no user object to delete. That orphan reports `false`, which is exactly the leak this field exists to surface — so the distinction is between *nothing was created* and *cleanup succeeded*, not between *created* and *not created*.
 
 Creating and deleting the probe user dispatches `UserCreatedEvent` and `UserDeletedEvent`, which this app's own `UserEventListener` reacts to by enqueuing a (deduplicated) `UserStatsJob`. Running the round trip therefore causes one extra user-count report on the next cron tick.
 
@@ -215,7 +217,8 @@ sequenceDiagram
 | `configured_algorithm` is `bcrypt` but `hashing_default_password` passes | The PHP build has no argon2 support (`PASSWORD_ARGON2ID` undefined). An image problem, not a config problem. `stored_distribution` still reports the existing rows as `argon2id`, and `security_config.parameters` comes back empty — so the artifact shows argon2id at rest against a build that can no longer produce or verify it. Note that no existing account can authenticate on such a build. |
 | `configured_algorithm` is `argon2id` but `round_trip.stored_algorithm` is not | Something between `IUserManager` and the database is rewriting the hash — a user backend that hashes on its own, for example. |
 | `stored_distribution` shows `bcrypt`, `argon2i` or a `legacy-*` bucket | Accounts that have not authenticated since the algorithm changed. Nextcloud rehashes on the next successful login; a persistent count means those accounts are dormant. |
-| `round_trip.cleaned_up` is `false` | A probe account was left behind. Delete `ncw-selftest-*` manually and investigate the logged error. |
-| `round_trip.result` is `FAIL` with `stored_algorithm: null` | The probe user could not be created — most likely `password_policy` rejected the generated password. See the logged error. |
+| `round_trip.cleaned_up` is `false` | A probe account was left behind. Delete `ncw-selftest-*` manually and investigate the logged error. Note this also fires when `createUser()` threw *after* inserting the row, so the orphan exists although no user object was ever returned to delete. |
+| `round_trip.result` is `FAIL` with `stored_algorithm: null` and `cleaned_up: null` | The probe user could not be created — most likely `password_policy` rejected the generated password. Nothing was written, so there is nothing to clean up. See the logged error. |
+| `round_trip.result` is `FAIL` with `stored_algorithm: null` and `cleaned_up: true` | The probe user was created and removed again, but its stored hash could not be read back. A database problem during the round trip rather than a hashing finding. See the logged error. |
 | Exit 2 with no artifact | Wrong invocation, not a control failure. |
 | Exit 3 with no artifact | The self-test itself could not run — an unreachable database, or a hasher that threw. Not a control verdict, so it must not be reported as a FAIL. Look for the `ncw_tools security selftest: could not collect the evidence artifact` error line, which carries the exception class and message. |

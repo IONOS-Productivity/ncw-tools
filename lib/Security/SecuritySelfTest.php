@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
  * are reported; `passwordsalt` and `secret` are reported as presence only.
  */
 class SecuritySelfTest {
-	public const SCHEMA_VERSION = '3';
+	public const SCHEMA_VERSION = '4';
 
 	public const RESULT_PASS = 'PASS';
 	public const RESULT_FAIL = 'FAIL';
@@ -207,6 +207,11 @@ class SecuritySelfTest {
 	 * Hashes a throwaway password through the real user pipeline and reads back
 	 * what landed in the database, then removes the probe user again.
 	 *
+	 * `cleaned_up` is true when no probe user remains, false when one was left
+	 * behind, and null when there was nothing to clean up because the probe was
+	 * never created -- a distinction the evidence needs, since a true would
+	 * otherwise attest a create-and-delete that never took place.
+	 *
 	 * @return array{result: string, stored_algorithm: string|null, cleaned_up: bool|null}
 	 */
 	private function runRoundTrip(): array {
@@ -226,11 +231,6 @@ class SecuritySelfTest {
 		} catch (\Throwable $e) {
 			// Message only, never the exception: deep frames can carry the
 			// throwaway password in their stack-trace arguments.
-			//
-			// The key is `exceptionMessage` rather than `message` because
-			// OC\Log::interpolateMessage() array_merges the log line's own text
-			// over a `message` key in the context and then hoists it out of
-			// `data` -- a `message` here never reaches the log at all.
 			$this->logger->error('SecuritySelfTest: round-trip probe failed', [
 				'uid' => $uid,
 				'exceptionClass' => $e::class,
@@ -250,13 +250,23 @@ class SecuritySelfTest {
 			}
 		}
 
-		$cleanedUp = $this->userManager->get($uid) === null;
-		if (!$cleanedUp) {
+		$probeWasCreated = $user !== null && $user !== false;
+		// Resolved even when creation never handed back a user: createUser()
+		// can insert the row and then throw from a post-creation hook, and that
+		// orphan -- which the finally above could not delete, having no user
+		// object -- is exactly what this check exists to catch.
+		$orphan = $this->userManager->get($uid) !== null;
+		if ($orphan) {
 			$this->logger->error('SecuritySelfTest: round-trip probe user still exists', ['uid' => $uid]);
 		}
 
+		// null means there was nothing to clean up, which is not the same claim
+		// as a successful cleanup: reporting true for a probe user that was
+		// never created would attest a create-and-delete that never happened.
+		$cleanedUp = ($probeWasCreated || $orphan) ? !$orphan : null;
+
 		return [
-			'result' => $this->verdict($storedAlgorithm === self::EXPECTED_ALGORITHM && $cleanedUp),
+			'result' => $this->verdict($storedAlgorithm === self::EXPECTED_ALGORITHM && $cleanedUp === true),
 			'stored_algorithm' => $storedAlgorithm,
 			'cleaned_up' => $cleanedUp,
 		];

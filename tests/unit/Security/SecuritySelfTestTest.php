@@ -84,7 +84,7 @@ class SecuritySelfTestTest extends TestCase {
 			['schema_version', 'timestamp', 'result', 'instance', 'password_hashing', 'security_config'],
 			array_keys($report),
 		);
-		$this->assertSame('3', $report['schema_version']);
+		$this->assertSame('4', $report['schema_version']);
 		$this->assertSame(
 			['id', 'url', 'name', 'namespace', 'environment'],
 			array_keys($report['instance']),
@@ -516,7 +516,9 @@ class SecuritySelfTestTest extends TestCase {
 		$this->assertSame([
 			'result' => SecuritySelfTest::RESULT_FAIL,
 			'stored_algorithm' => null,
-			'cleaned_up' => true,
+			// Not true: nothing was created, so there was nothing to clean up,
+			// and a true here would attest a create-and-delete that never was.
+			'cleaned_up' => null,
 		], $report['password_hashing']['round_trip']);
 		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['result']);
 	}
@@ -537,6 +539,40 @@ class SecuritySelfTestTest extends TestCase {
 
 		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['password_hashing']['round_trip']['result']);
 		$this->assertNull($report['password_hashing']['round_trip']['stored_algorithm']);
+		$this->assertNull($report['password_hashing']['round_trip']['cleaned_up']);
+	}
+
+	/**
+	 * The case that keeps `cleaned_up` an orphan check rather than a mere
+	 * "was the probe created" flag: createUser() can insert the row and then
+	 * throw from a post-creation hook, so no user object ever comes back for
+	 * the `finally` to delete — and the leak must still be reported.
+	 */
+	public function testRoundTripReportsALeakWhenCreationThrowsAfterTheRowWasInserted(): void {
+		$this->stubHasher(self::argon2id());
+		$this->stubConfig();
+		$this->stubDatabase([self::argon2id()]);
+
+		$this->userManager->method('createUser')
+			->willThrowException(new \RuntimeException('a post-creation hook failed'));
+		// The row is there even though creation handed back no user object.
+		$this->userManager->method('get')->willReturn($this->createMock(IUser::class));
+
+		$this->logger->expects($this->exactly(2))
+			->method('error')
+			->with($this->logicalOr(
+				'SecuritySelfTest: round-trip probe failed',
+				'SecuritySelfTest: round-trip probe user still exists',
+			), $this->anything());
+
+		$report = $this->selfTest()->run(true);
+
+		$this->assertSame([
+			'result' => SecuritySelfTest::RESULT_FAIL,
+			'stored_algorithm' => null,
+			'cleaned_up' => false,
+		], $report['password_hashing']['round_trip']);
+		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['result']);
 	}
 
 	public function testThePublishedSchemaTracksTheProducersSchemaVersion(): void {
@@ -586,6 +622,45 @@ class SecuritySelfTestTest extends TestCase {
 		$report = $this->selfTest()->run(true);
 
 		$this->assertSame(SecuritySelfTest::RESULT_PASS, $report['password_hashing']['round_trip']['result']);
+		$this->assertMatchesArtifactSchema($report);
+	}
+
+	/**
+	 * The schema no longer requires `cleaned_up` to be a boolean on a round
+	 * trip that ran, so the variant that reports null has to be pinned against
+	 * it too — including its invariant that a null forces a null algorithm.
+	 */
+	public function testARoundTripArtifactWithNothingToCleanUpMatchesThePublishedSchema(): void {
+		$this->stubHasher(self::argon2id());
+		$this->stubConfig();
+		$this->stubDatabase([self::argon2id()]);
+
+		$this->userManager->method('createUser')->willReturn(false);
+		$this->userManager->method('get')->willReturn(null);
+
+		$report = $this->selfTest()->run(true);
+
+		$this->assertSame(SecuritySelfTest::RESULT_FAIL, $report['password_hashing']['round_trip']['result']);
+		$this->assertNull($report['password_hashing']['round_trip']['cleaned_up']);
+		$this->assertMatchesArtifactSchema($report);
+	}
+
+	/**
+	 * A round trip that left an orphan behind still reports a boolean, so the
+	 * relaxed rule cannot be read as "anything goes once it ran".
+	 */
+	public function testARoundTripArtifactReportingALeakMatchesThePublishedSchema(): void {
+		$this->stubHasher(self::argon2id());
+		$this->stubConfig();
+		$this->stubDatabase([self::argon2id()], self::argon2id());
+
+		$user = $this->createMock(IUser::class);
+		$this->userManager->method('createUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn($user);
+
+		$report = $this->selfTest()->run(true);
+
+		$this->assertFalse($report['password_hashing']['round_trip']['cleaned_up']);
 		$this->assertMatchesArtifactSchema($report);
 	}
 

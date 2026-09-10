@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:ionos:ncw-tools:security-selftest-artifact:3",
+  "$id": "urn:ionos:ncw-tools:security-selftest-artifact:4",
   "title": "NCW security self-test evidence artifact",
   "description": "The artifact written by `occ ncw_tools:security:selftest --output=json`, and logged as the structured context of the `ncw_tools security selftest` line. It is the C5 PSS-07 evidence that this instance hashes passwords with argon2id. The shape is a cross-repo contract: nc-manager/bin/send-report.sh reads it with jq and forwards it to the report endpoint, so a change to it needs a schema_version bump. No field ever carries hash material, a salt or a secret value - only algorithm names, counts, booleans and cost parameters.",
   "type": "object",
@@ -15,7 +15,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "3",
+      "const": "4",
       "$comment": "A string, not a number. Bump on any change to this schema."
     },
     "timestamp": {
@@ -199,7 +199,8 @@
         },
         "cleaned_up": {
           "type": ["boolean", "null"],
-          "description": "Re-checked after deletion by resolving the uid again. null only when SKIPPED."
+          "description": "Re-checked after deletion by resolving the uid again. true when no probe user remains, false when one was left behind, and null when there was nothing to clean up - a SKIPPED round trip, or one whose probe user could never be created. Read it with stored_algorithm rather than alone: a true against a null algorithm would otherwise be indistinguishable from a probe that never existed.",
+          "$comment": "A probe orphaned by a throw *after* its row was inserted still reports false, because the uid is resolved whether or not creation handed back a user object. Distinguishing that leak from 'nothing was created' is the reason this field is not simply a boolean."
         }
       },
       "allOf": [
@@ -217,13 +218,13 @@
           }
         },
         {
-          "$comment": "A round trip that ran always knows whether it cleaned up after itself.",
+          "$comment": "cleaned_up is null only when nothing was created, and nothing can have been read back from a probe that was never created. The converse does not hold: a probe can be created and still yield no algorithm, if reading the row back fails.",
           "if": {
-            "required": ["result"],
-            "properties": { "result": { "enum": ["PASS", "FAIL"] } }
+            "required": ["cleaned_up"],
+            "properties": { "cleaned_up": { "type": "null" } }
           },
           "then": {
-            "properties": { "cleaned_up": { "type": "boolean" } }
+            "properties": { "stored_algorithm": { "type": "null" } }
           }
         },
         {
