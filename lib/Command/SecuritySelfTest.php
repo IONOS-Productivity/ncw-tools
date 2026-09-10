@@ -237,6 +237,14 @@ class SecuritySelfTest extends Base {
 			return null;
 		}
 
-		return (int)$sampleSize;
+		// ctype_digit() accepts more digits than an int can hold, and the cast
+		// would saturate to PHP_INT_MAX -- silently turning a value this method
+		// is meant to reject into "survey every row". filter_var() rejects an
+		// unrepresentable integer instead of clamping it; ctype_digit() above
+		// has already ruled out the signs and surrounding whitespace it would
+		// otherwise accept.
+		$parsed = filter_var($sampleSize, FILTER_VALIDATE_INT);
+
+		return is_int($parsed) ? $parsed : null;
 	}
 }

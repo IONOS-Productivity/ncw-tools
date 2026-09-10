@@ -11,6 +11,7 @@ namespace OCA\NcwTools\Tests\Unit\Command;
 
 use OCA\NcwTools\Command\SecuritySelfTest;
 use OCA\NcwTools\Security\SecuritySelfTest as SecuritySelfTestService;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -151,6 +152,61 @@ class SecuritySelfTestTest extends TestCase {
 
 		$this->assertSame(self::EXIT_USAGE, $tester->getStatusCode());
 		$this->assertSame('', $tester->getDisplay());
+	}
+
+	/**
+	 * `99999999999999999999` is the one that matters: ctype_digit() accepts it,
+	 * and an (int) cast saturates it to PHP_INT_MAX, so the survey would run
+	 * unbounded over the users table on a value the validator rejects.
+	 */
+	#[DataProvider('invalidSampleSizes')]
+	public function testRejectsASampleSizeThatIsNotANonNegativeInteger(string $sampleSize): void {
+		$this->selfTest->expects($this->never())->method('run');
+
+		$tester = $this->runCommand(['--output' => 'json', '--sample-size' => $sampleSize]);
+
+		$this->assertSame(self::EXIT_USAGE, $tester->getStatusCode());
+		$this->assertSame('', $tester->getDisplay());
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function invalidSampleSizes(): array {
+		return [
+			'more digits than an int can hold' => ['99999999999999999999'],
+			'exactly one digit too many' => ['92233720368547758070'],
+			'negative' => ['-1'],
+			'not a number' => ['abc'],
+			'empty' => [''],
+			'fractional' => ['1.5'],
+			'scientific notation' => ['1e3'],
+			'leading whitespace' => [' 10'],
+			'signed' => ['+10'],
+		];
+	}
+
+	#[DataProvider('validSampleSizes')]
+	public function testAcceptsANonNegativeIntegerSampleSize(string $sampleSize, int $expected): void {
+		$this->selfTest->expects($this->once())
+			->method('run')
+			->with(false, $expected)
+			->willReturn($this->artifact(SecuritySelfTestService::RESULT_PASS));
+
+		$tester = $this->runCommand(['--output' => 'json', '--sample-size' => $sampleSize]);
+
+		$this->assertSame(self::EXIT_PASS, $tester->getStatusCode());
+	}
+
+	/**
+	 * @return array<string, array{string, int}>
+	 */
+	public static function validSampleSizes(): array {
+		return [
+			'zero surveys all rows' => ['0', 0],
+			'the default' => ['1000', 1000],
+			'the largest representable int' => [(string)PHP_INT_MAX, PHP_INT_MAX],
+		];
 	}
 
 	/**
