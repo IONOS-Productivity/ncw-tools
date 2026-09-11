@@ -132,7 +132,18 @@ class SecuritySelfTest extends Base {
 				// Not a FAIL: the artifact was collected, only writing it out
 				// failed, and exiting 1 here would break the promise that an
 				// exit 1 carries the complete artifact.
+				//
+				// Logged as well as written to stderr, and with a scalar-only
+				// context: whatever defeated json_encode() here is in the
+				// report, so the info() line above carries it too and the log
+				// writer serialises that context the same way. This line is
+				// the only one Kibana can be relied on to receive, so it has
+				// to name the reason without embedding the report.
+				$this->logger->error(self::LOG_MESSAGE . ': could not encode the evidence artifact', [
+					'jsonError' => json_last_error_msg(),
+				]);
 				$errors->writeln('<error>Could not encode the evidence artifact: ' . json_last_error_msg() . '</error>');
+
 				return self::EXIT_INTERNAL_ERROR;
 			}
 			$output->writeln($json);

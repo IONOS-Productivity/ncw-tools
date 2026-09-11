@@ -145,6 +145,27 @@ class SecuritySelfTestTest extends TestCase {
 		$this->assertSame('', $tester->getDisplay());
 	}
 
+	/**
+	 * Whatever defeated json_encode() is in the report, so the info() line
+	 * carries it too and the log writer serialises that context the same way.
+	 * This scalar-only error line is the only one Kibana can be relied on to
+	 * receive, and the documented exit-3 contract promises it.
+	 */
+	public function testLogsTheReasonTheArtifactCouldNotBeEncoded(): void {
+		$artifact = $this->artifact(SecuritySelfTestService::RESULT_PASS);
+		$artifact['instance']['name'] = NAN;
+		$this->selfTest->method('run')->willReturn($artifact);
+
+		$this->logger->expects($this->once())
+			->method('error')
+			->with(
+				'ncw_tools security selftest: could not encode the evidence artifact',
+				$this->callback(fn (array $context): bool => $context === ['jsonError' => 'Inf and NaN cannot be JSON encoded']),
+			);
+
+		$this->runCommand(['--output' => 'json']);
+	}
+
 	public function testRejectsAnUnknownOutputFormat(): void {
 		$this->selfTest->expects($this->never())->method('run');
 
