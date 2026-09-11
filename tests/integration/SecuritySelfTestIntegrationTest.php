@@ -39,6 +39,9 @@ class SecuritySelfTestIntegrationTest extends TestCase {
 	/** @var array<string, string|null> */
 	private array $observedProbeEmails = [];
 
+	/** Kept so tearDown() can detach it from the shared event dispatcher. */
+	private ?\Closure $probeListener = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -49,20 +52,30 @@ class SecuritySelfTestIntegrationTest extends TestCase {
 
 		// The probe user only exists between createUser() and delete(), so the
 		// creation event is the only place its email address can be inspected.
-		Server::get(IEventDispatcher::class)->addListener(
-			UserCreatedEvent::class,
-			function (UserCreatedEvent $event): void {
-				$uid = $event->getUser()->getUID();
-				if (!str_starts_with($uid, 'ncw-selftest-')) {
-					return;
-				}
-				$this->observedProbeUids[] = $uid;
-				$this->observedProbeEmails[$uid] = $event->getUser()->getEMailAddress();
-			},
-		);
+		//
+		// Held in a property so tearDown() can remove it again: the dispatcher
+		// is the shared server instance, so a listener added per test and never
+		// removed accumulates across the class and keeps every previous test's
+		// closure -- and its $this -- alive.
+		$this->probeListener = function (UserCreatedEvent $event): void {
+			$uid = $event->getUser()->getUID();
+			if (!str_starts_with($uid, 'ncw-selftest-')) {
+				return;
+			}
+			$this->observedProbeUids[] = $uid;
+			$this->observedProbeEmails[$uid] = $event->getUser()->getEMailAddress();
+		};
+		Server::get(IEventDispatcher::class)
+			->addListener(UserCreatedEvent::class, $this->probeListener);
 	}
 
 	protected function tearDown(): void {
+		if ($this->probeListener !== null) {
+			Server::get(IEventDispatcher::class)
+				->removeListener(UserCreatedEvent::class, $this->probeListener);
+			$this->probeListener = null;
+		}
+
 		// Safety net: never leave a probe account behind, whatever failed.
 		foreach ($this->observedProbeUids as $uid) {
 			$this->userManager->get($uid)?->delete();
