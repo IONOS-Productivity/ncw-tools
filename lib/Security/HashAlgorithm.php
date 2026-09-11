@@ -79,13 +79,18 @@ final class HashAlgorithm {
 	 * evidence than the `hashing*` config keys because the hasher clamps those
 	 * to the algorithm minimums.
 	 *
-	 * Returns an empty array for legacy, empty or unrecognised hashes — and,
-	 * unlike {@see self::fromStoredHash()}, for an argon2 hash on a PHP build
-	 * without argon2 support, because only the registered handler can read the
-	 * cost fields. The artifact reports these parameters as evidence and never
+	 * Returns an empty array for empty, unrecognised and legacy sha1 hashes,
+	 * which `password_get_info()` reports nothing for — and, unlike
+	 * {@see self::fromStoredHash()}, for an argon2 hash on a PHP build without
+	 * argon2 support, because only the registered handler can read the cost
+	 * fields. The artifact reports these parameters as evidence and never
 	 * asserts on them, so degrading to "not reported" is the right failure: the
 	 * algorithm itself is still classified, and the configured-algorithm check
 	 * is what turns such a build into a FAIL.
+	 *
+	 * An unprefixed legacy *bcrypt* hash is the exception: it is a bare
+	 * `password_hash()` string, so the handler reads its `cost` and this method
+	 * reports it. Being unprefixed makes it legacy, not unreadable.
 	 *
 	 * @return array<string, int>
 	 */

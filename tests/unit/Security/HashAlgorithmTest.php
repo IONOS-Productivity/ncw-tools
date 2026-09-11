@@ -196,6 +196,19 @@ class HashAlgorithmTest extends TestCase {
 		$this->assertSame(['cost' => 11], HashAlgorithm::parametersFromStoredHash($stored));
 	}
 
+	/**
+	 * Being unprefixed makes a hash legacy, not unreadable: a legacy bcrypt
+	 * value is a bare `password_hash()` string, so the handler still reads its
+	 * cost. Pinned because the docblock used to claim legacy hashes report
+	 * nothing, which held for sha1 but never for bcrypt.
+	 */
+	public function testParametersFromAnUnprefixedLegacyBcryptHash(): void {
+		$stored = password_hash('probe', PASSWORD_BCRYPT, ['cost' => 9]);
+
+		$this->assertSame(HashAlgorithm::LEGACY_BCRYPT, HashAlgorithm::fromStoredHash($stored));
+		$this->assertSame(['cost' => 9], HashAlgorithm::parametersFromStoredHash($stored));
+	}
+
 	public static function provideHashesWithoutParameters(): array {
 		return [
 			'empty' => [''],
