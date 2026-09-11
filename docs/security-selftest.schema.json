@@ -113,8 +113,16 @@
         "checks": {
           "type": "array",
           "minItems": 1,
-          "description": "One entry per asserted config value, read through IConfig so the effective merged configuration is asserted rather than a single file. The list is extensible: consumers must match on key rather than on position or length.",
-          "$comment": "Currently: hashing_default_password, auth.bruteforce.protection.enabled, ratelimit.protection.enabled, overwriteprotocol, passwordsalt_present, secret_present.",
+          "description": "One entry per asserted config value, read through IConfig so the effective merged configuration is asserted rather than a single file. All six documented keys are required: an artifact that omits one does not establish the hardening requirement it stands for, so their presence is part of the contract rather than a convention. The list stays extensible - further checks may be added, so consumers must still match on key rather than on position or length.",
+          "$comment": "The six contains clauses below are what stops a consumer accepting evidence that silently dropped a check. Adding a check is backwards compatible; removing one is a contract change and needs a schema_version bump.",
+          "allOf": [
+            { "contains": { "type": "object", "required": ["key"], "properties": { "key": { "const": "hashing_default_password" } } } },
+            { "contains": { "type": "object", "required": ["key"], "properties": { "key": { "const": "auth.bruteforce.protection.enabled" } } } },
+            { "contains": { "type": "object", "required": ["key"], "properties": { "key": { "const": "ratelimit.protection.enabled" } } } },
+            { "contains": { "type": "object", "required": ["key"], "properties": { "key": { "const": "overwriteprotocol" } } } },
+            { "contains": { "type": "object", "required": ["key"], "properties": { "key": { "const": "passwordsalt_present" } } } },
+            { "contains": { "type": "object", "required": ["key"], "properties": { "key": { "const": "secret_present" } } } }
+          ],
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -141,7 +149,25 @@
           "description": "Evidence, not an assertion: the cost parameters the probe hash was actually produced with, as reported by password_get_info(). memory_cost/time_cost/threads for argon2, cost for bcrypt. These are the effective values, which is stronger evidence than the hashing* config keys because the hasher clamps those to the algorithm minimums. An empty object when the parameters cannot be read - notably for an argon2 hash on a PHP build without argon2 support, where only the registered handler could read the cost fields.",
           "$comment": "Always a JSON object, never []. The producer casts the map so an empty one cannot degrade into an array on either evidence channel."
         }
-      }
+      },
+      "allOf": [
+        {
+          "$comment": "A passing hardening section cannot contain a failing check. Without this the section verdict is unconnected to the evidence under it, and a PASS could be claimed over a check that says FAIL.",
+          "if": {
+            "required": ["result"],
+            "properties": { "result": { "const": "PASS" } }
+          },
+          "then": {
+            "properties": {
+              "checks": {
+                "items": {
+                  "properties": { "result": { "const": "PASS" } }
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   },
   "allOf": [

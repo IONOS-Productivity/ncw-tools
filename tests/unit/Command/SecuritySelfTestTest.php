@@ -256,14 +256,31 @@ class SecuritySelfTestTest extends TestCase {
 			],
 			'security_config' => [
 				'result' => $result,
-				'checks' => [[
-					'key' => 'hashing_default_password',
-					'expected' => false,
-					'actual' => false,
-					'result' => 'PASS',
-				]],
+				// All six checks, because the published schema requires every
+				// one of them: a fixture carrying a single check could not be
+				// produced by the real command.
+				'checks' => [
+					$this->check('hashing_default_password', false),
+					$this->check('auth.bruteforce.protection.enabled', true),
+					$this->check('ratelimit.protection.enabled', true),
+					$this->check('overwriteprotocol', 'https'),
+					$this->check('passwordsalt_present', true),
+					$this->check('secret_present', true),
+				],
 				'parameters' => (object)['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 1],
 			],
+		];
+	}
+
+	/**
+	 * @return array{key: string, expected: bool|string, actual: bool|string, result: string}
+	 */
+	private function check(string $key, bool|string $expected): array {
+		return [
+			'key' => $key,
+			'expected' => $expected,
+			'actual' => $expected,
+			'result' => SecuritySelfTestService::RESULT_PASS,
 		];
 	}
 }
