@@ -19,11 +19,25 @@
 	<extraFiles>
 		<directory name="vendor"/>
 		<directory name="tests/stubs"/>
+		<!--
+			Signature-only stubs for classes the server provides at runtime but that
+			are absent from the nextcloud/ocp package (OC\Core\Command\Base and the
+			Symfony Console interfaces it depends on).
+
+			These deliberately live outside tests/stubs, which composer.json maps into
+			the autoload-dev classmap: a dev-mode composer install would otherwise load
+			them at runtime, where they shadow the real classes in 3rdparty/ and fatal
+			every occ command on a signature mismatch. Release builds exclude dev
+			dependencies so they never saw this, but a developer's dev container does.
+		-->
+		<directory name="tests/psalm-stubs"/>
 	</extraFiles>
 	<issueHandlers>
 		<UnusedClass>
 			<errorLevel type="suppress">
 				<referencedClass name="OCA\NcwTools\AppInfo\Application" />
+				<!-- Registered through appinfo/info.xml, which psalm does not read -->
+				<referencedClass name="OCA\NcwTools\Command\SecuritySelfTest" />
 			</errorLevel>
 		</UnusedClass>
 		<PossiblyUnusedMethod>
@@ -31,9 +45,11 @@
 				<referencedMethod name="OCA\NcwTools\AppInfo\Application::__construct" />
 				<referencedMethod name="OCA\NcwTools\BackgroundJob\PostSetupJob::__construct" />
 				<referencedMethod name="OCA\NcwTools\BackgroundJob\UserStatsJob::__construct" />
+				<referencedMethod name="OCA\NcwTools\Command\SecuritySelfTest::__construct" />
 				<referencedMethod name="OCA\NcwTools\Helper\WelcomeMailHelper::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\InstallationCompletedEventListener::__construct" />
 				<referencedMethod name="OCA\NcwTools\Listeners\UserEventListener::__construct" />
+				<referencedMethod name="OCA\NcwTools\Security\SecuritySelfTest::__construct" />
 				<referencedMethod name="OCA\NcwTools\Stats\PssApiFactory::__construct" />
 				<referencedMethod name="OCA\NcwTools\Stats\PssConfigReader::__construct" />
 				<referencedMethod name="OCA\NcwTools\Stats\PssStatsReporter::__construct" />

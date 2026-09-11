@@ -70,6 +70,7 @@
 	},
 	"require-dev": {
 		"nextcloud/ocp": "dev-stable33",
+		"opis/json-schema": "^2.6",
 		"roave/security-advisories": "dev-latest"
 	},
 	"config": {

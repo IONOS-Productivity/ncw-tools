@@ -44,7 +44,9 @@ path = [
     "CODE_OF_CONDUCT.md",
     "docs/README.md",
     "docs/events/post-setup.md",
-    "docs/events/user-stats.md"
+    "docs/events/user-stats.md",
+    "docs/security-selftest.md",
+    "docs/security-selftest.schema.json"
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 STRATO GmbH"
